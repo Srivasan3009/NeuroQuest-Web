@@ -1,0 +1,6 @@
+{
+  "name": "NeuroQuest",
+  "description": "Interactive AI learning platform guiding students from foundations to autonomous agents with hands-on quests and AI tutoring.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
