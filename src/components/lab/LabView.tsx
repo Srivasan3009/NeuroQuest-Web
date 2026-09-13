@@ -32,9 +32,10 @@ export const LabView: React.FC<LabViewProps> = ({
   stages,
   onStartLesson,
   onAddSparks,
-  theme = "cyber-dark"
+  theme = "neumorphic"
 }) => {
-  const isRiso = theme === "riso-pop";
+  const isNeumorphic = theme === "neumorphic";
+  const isRiso = theme === "riso-pop" || theme === "warm-editorial";
 
   // Daily plan checklist state
   const [tasksCompleted, setTasksCompleted] = useState<Record<string, boolean>>({
@@ -146,13 +147,15 @@ export const LabView: React.FC<LabViewProps> = ({
   const completedTodayCount = Object.values(tasksCompleted).filter(Boolean).length;
 
   return (
-    <div id="lab-view" className="space-y-6 pb-24 max-w-lg mx-auto px-4 pt-2">
+    <div id="lab-view" className="w-full max-w-6xl xl:max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-3 sm:pt-6 pb-32 space-y-6">
       {/* 1. Header with Sparks pill */}
       <div className="flex items-center justify-between pb-1">
-        <h1 className="text-2xl font-black tracking-tight text-slate-100 uppercase">LAB</h1>
+        <h1 className={`text-2xl font-black tracking-tight uppercase ${isNeumorphic ? "text-slate-800" : "text-slate-100"}`}>LAB</h1>
         <div
           className={`flex items-center gap-1.5 px-3 py-1 rounded-xl text-xs font-mono font-bold ${
-            isRiso
+            isNeumorphic
+              ? "neu-pill-accent text-amber-600"
+              : isRiso
               ? "bg-[#FEF08A] border-2 border-[#1E1B18] text-[#1E1B18]"
               : "bg-amber-950/40 border border-amber-500/40 text-amber-400"
           }`}
@@ -162,35 +165,45 @@ export const LabView: React.FC<LabViewProps> = ({
         </div>
       </div>
 
-      {/* 2. League Chest Progress Card matching video */}
-      <div
-        className={`p-4 rounded-2xl flex items-center justify-between gap-4 transition-all ${
-          isRiso
-            ? "bg-[#FFFDF9] border-2 border-[#1E1B18] shadow-[3px_3px_0px_#1E1B18]"
-            : "bg-gradient-to-r from-slate-900 to-amber-950/30 border border-amber-500/30 shadow-lg"
-        }`}
-      >
+      {/* Main Grid: Responsive 2-column layout on desktop, stacked on mobile */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
+        {/* Left Column: Chest Progress & Daily Plan */}
+        <div className="space-y-6">
+          {/* 2. League Chest Progress Card matching video */}
+          <div
+            className={`p-4 rounded-2xl flex items-center justify-between gap-4 transition-all ${
+              isNeumorphic
+                ? "neu-raised text-slate-800"
+                : isRiso
+                ? "bg-[#FFFDF9] border-2 border-[#1E1B18] shadow-[3px_3px_0px_#1E1B18]"
+                : "bg-gradient-to-r from-slate-900 to-amber-950/30 border border-amber-500/30 shadow-lg"
+            }`}
+          >
         <div className="flex items-center gap-3.5">
           {/* League Chest Icon */}
-          <div className="w-14 h-14 rounded-2xl bg-amber-500/10 border-2 border-amber-500/40 flex items-center justify-center text-amber-400 shadow-[0_0_15px_rgba(245,158,11,0.2)]">
+          <div className={`w-14 h-14 rounded-2xl flex items-center justify-center ${
+            isNeumorphic
+              ? "neu-inset text-amber-500"
+              : "bg-amber-500/10 border-2 border-amber-500/40 text-amber-400 shadow-[0_0_15px_rgba(245,158,11,0.2)]"
+          }`}>
             <Award className="w-7 h-7" />
           </div>
 
           <div>
-            <div className="text-[10px] font-mono uppercase tracking-wider text-slate-400">
+            <div className={`text-[10px] font-mono uppercase tracking-wider ${isNeumorphic ? "text-slate-500" : "text-slate-400"}`}>
               LEAGUE • CHEST LV.1
             </div>
-            <div className="text-base font-black text-amber-400 uppercase tracking-wide">
+            <div className="text-base font-black text-amber-500 uppercase tracking-wide">
               BRONZE
             </div>
-            <div className="text-xs text-slate-400 font-mono">
+            <div className={`text-xs font-mono ${isNeumorphic ? "text-slate-500" : "text-slate-400"}`}>
               {(user.completedQuestIds || []).length || 1}/20 to next chest
             </div>
           </div>
         </div>
 
         <div className="text-right">
-          <span className="text-xs font-medium text-slate-400 block max-w-[110px] leading-tight">
+          <span className={`text-xs font-medium block max-w-[110px] leading-tight ${isNeumorphic ? "text-slate-500" : "text-slate-400"}`}>
             Finish a lesson today • start a streak
           </span>
         </div>
@@ -199,21 +212,25 @@ export const LabView: React.FC<LabViewProps> = ({
       {/* 3. Lab Plan: Today + Journey matching video */}
       <div
         className={`p-4 rounded-2xl space-y-4 transition-all ${
-          isRiso
+          isNeumorphic
+            ? "neu-raised text-slate-800"
+            : isRiso
             ? "bg-[#FFFDF9] border-2 border-[#1E1B18] shadow-[3px_3px_0px_#1E1B18]"
             : "bg-slate-900/90 border border-slate-800 shadow-md"
         }`}
       >
-        <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+        <div className={`flex items-center justify-between pb-3 ${isNeumorphic ? "border-b border-slate-300" : "border-b border-slate-800"}`}>
           <div>
-            <span className="text-[10px] font-mono uppercase text-slate-400 font-bold block">
+            <span className={`text-[10px] font-mono uppercase font-bold block ${isNeumorphic ? "text-slate-500" : "text-slate-400"}`}>
               LAB PLAN
             </span>
-            <h2 className="text-base font-black text-slate-100">TODAY + JOURNEY</h2>
+            <h2 className={`text-base font-black ${isNeumorphic ? "text-slate-800" : "text-slate-100"}`}>TODAY + JOURNEY</h2>
           </div>
           <span
             className={`text-xs font-mono font-bold px-2.5 py-1 rounded-full ${
-              isRiso ? "bg-[#EEF2FF] text-[#4F46E5]" : "bg-cyan-950 text-cyan-400 border border-cyan-500/30"
+              isNeumorphic
+                ? "neu-inset text-[#4F46E5]"
+                : isRiso ? "bg-[#EEF2FF] text-[#4F46E5]" : "bg-cyan-950 text-cyan-400 border border-cyan-500/30"
             }`}
           >
             {completedTodayCount}/3 today
@@ -225,10 +242,10 @@ export const LabView: React.FC<LabViewProps> = ({
           {/* Task 1: Learn */}
           <div className="flex items-start justify-between gap-3">
             <div className="flex-1">
-              <div className="text-xs font-bold text-slate-200">
+              <div className={`text-xs font-bold ${isNeumorphic ? "text-slate-800" : "text-slate-200"}`}>
                 Learn — finish 1 lesson
               </div>
-              <div className="text-xs text-slate-400 mt-0.5">
+              <div className={`text-xs mt-0.5 ${isNeumorphic ? "text-slate-500" : "text-slate-400"}`}>
                 Next: {currentLesson?.title || "AI Basics Made Simple"}
               </div>
             </div>
@@ -236,8 +253,8 @@ export const LabView: React.FC<LabViewProps> = ({
               onClick={() => handleToggleTask("learn")}
               className={`p-1.5 rounded-xl transition-all ${
                 tasksCompleted.learn
-                  ? "text-emerald-400 bg-emerald-950/40"
-                  : "text-slate-500 hover:text-slate-300"
+                  ? isNeumorphic ? "neu-flat text-emerald-600" : "text-emerald-400 bg-emerald-950/40"
+                  : isNeumorphic ? "neu-inset text-slate-400" : "text-slate-500 hover:text-slate-300"
               }`}
             >
               {tasksCompleted.learn ? (
@@ -251,10 +268,10 @@ export const LabView: React.FC<LabViewProps> = ({
           {/* Task 2: Fix */}
           <div className="flex items-start justify-between gap-3">
             <div className="flex-1">
-              <div className="text-xs font-bold text-slate-200">
+              <div className={`text-xs font-bold ${isNeumorphic ? "text-slate-800" : "text-slate-200"}`}>
                 Fix — replay weak concept
               </div>
-              <div className="text-xs text-slate-400 mt-0.5">
+              <div className={`text-xs mt-0.5 ${isNeumorphic ? "text-slate-500" : "text-slate-400"}`}>
                 Review Decision Boundary intuition
               </div>
             </div>
@@ -262,8 +279,8 @@ export const LabView: React.FC<LabViewProps> = ({
               onClick={() => handleToggleTask("fix")}
               className={`p-1.5 rounded-xl transition-all ${
                 tasksCompleted.fix
-                  ? "text-emerald-400 bg-emerald-950/40"
-                  : "text-slate-500 hover:text-slate-300"
+                  ? isNeumorphic ? "neu-flat text-emerald-600" : "text-emerald-400 bg-emerald-950/40"
+                  : isNeumorphic ? "neu-inset text-slate-400" : "text-slate-500 hover:text-slate-300"
               }`}
             >
               {tasksCompleted.fix ? (
@@ -277,10 +294,10 @@ export const LabView: React.FC<LabViewProps> = ({
           {/* Task 3: Play */}
           <div className="flex items-start justify-between gap-3">
             <div className="flex-1">
-              <div className="text-xs font-bold text-slate-200">
+              <div className={`text-xs font-bold ${isNeumorphic ? "text-slate-800" : "text-slate-200"}`}>
                 Play — one Lab game
               </div>
-              <div className="text-xs text-slate-400 mt-0.5">
+              <div className={`text-xs mt-0.5 ${isNeumorphic ? "text-slate-500" : "text-slate-400"}`}>
                 Truth Detector or Decision Classifier
               </div>
             </div>
@@ -288,8 +305,8 @@ export const LabView: React.FC<LabViewProps> = ({
               onClick={() => handleToggleTask("play")}
               className={`p-1.5 rounded-xl transition-all ${
                 tasksCompleted.play
-                  ? "text-emerald-400 bg-emerald-950/40"
-                  : "text-slate-500 hover:text-slate-300"
+                  ? isNeumorphic ? "neu-flat text-emerald-600" : "text-emerald-400 bg-emerald-950/40"
+                  : isNeumorphic ? "neu-inset text-slate-400" : "text-slate-500 hover:text-slate-300"
               }`}
             >
               {tasksCompleted.play ? (
@@ -302,47 +319,54 @@ export const LabView: React.FC<LabViewProps> = ({
         </div>
 
         {/* Milestone Rewards Track */}
-        <div className="pt-3 border-t border-slate-800 space-y-2">
-          <div className="text-[10px] font-mono text-slate-400 uppercase font-bold">
+        <div className={`pt-3 border-t space-y-2 ${isNeumorphic ? "border-slate-300" : "border-slate-800"}`}>
+          <div className={`text-[10px] font-mono uppercase font-bold ${isNeumorphic ? "text-slate-500" : "text-slate-400"}`}>
             JOURNEY • BRONZE MILESTONES
           </div>
           <div className="grid grid-cols-3 gap-2 text-center text-xs font-mono">
-            <div className="p-2 rounded-xl bg-slate-950/60 border border-slate-800">
-              <div className="text-slate-300 font-bold">Lesson 1</div>
-              <div className="text-amber-400 font-bold mt-0.5">+15 Sparks</div>
+            <div className={`p-2 rounded-xl ${isNeumorphic ? "neu-inset text-slate-800" : "bg-slate-950/60 border border-slate-800"}`}>
+              <div className={`font-bold ${isNeumorphic ? "text-slate-700" : "text-slate-300"}`}>Lesson 1</div>
+              <div className="text-amber-500 font-bold mt-0.5">+15 Sparks</div>
             </div>
-            <div className="p-2 rounded-xl bg-slate-950/60 border border-slate-800">
-              <div className="text-slate-300 font-bold">3 Lessons</div>
-              <div className="text-amber-400 font-bold mt-0.5">+35 Sparks</div>
+            <div className={`p-2 rounded-xl ${isNeumorphic ? "neu-inset text-slate-800" : "bg-slate-950/60 border border-slate-800"}`}>
+              <div className={`font-bold ${isNeumorphic ? "text-slate-700" : "text-slate-300"}`}>3 Lessons</div>
+              <div className="text-amber-500 font-bold mt-0.5">+35 Sparks</div>
             </div>
-            <div className="p-2 rounded-xl bg-slate-950/60 border border-slate-800">
-              <div className="text-slate-300 font-bold">5 Lessons</div>
-              <div className="text-amber-400 font-bold mt-0.5">+50 Sparks</div>
+            <div className={`p-2 rounded-xl ${isNeumorphic ? "neu-inset text-slate-800" : "bg-slate-950/60 border border-slate-800"}`}>
+              <div className={`font-bold ${isNeumorphic ? "text-slate-700" : "text-slate-300"}`}>5 Lessons</div>
+              <div className="text-amber-500 font-bold mt-0.5">+50 Sparks</div>
             </div>
           </div>
         </div>
       </div>
+    </div>
 
+    {/* Right Column: Play With Friend & Interactive Games Carousel */}
+    <div className="space-y-6">
       {/* 4. Play with Friend Card matching video */}
       <div
         className={`p-4 rounded-2xl space-y-3 transition-all ${
-          isRiso
+          isNeumorphic
+            ? "neu-raised text-slate-800"
+            : isRiso
             ? "bg-[#FFFDF9] border-2 border-[#1E1B18] shadow-[3px_3px_0px_#1E1B18]"
             : "bg-slate-900/90 border border-slate-800 shadow-md"
         }`}
       >
         <div className="flex items-center justify-between">
-          <h3 className="text-base font-black text-slate-100 uppercase tracking-tight">
+          <h3 className={`text-base font-black uppercase tracking-tight ${isNeumorphic ? "text-slate-800" : "text-slate-100"}`}>
             PLAY WITH FRIEND
           </h3>
-          <span className="text-xs font-mono font-bold text-violet-400 bg-violet-950/60 border border-violet-500/30 px-2 py-0.5 rounded-full">
+          <span className={`text-xs font-mono font-bold px-2 py-0.5 rounded-full ${
+            isNeumorphic ? "neu-pill-accent text-indigo-600" : "text-violet-400 bg-violet-950/60 border border-violet-500/30"
+          }`}>
             +5 XP WIN
           </span>
         </div>
 
         <div className="flex items-center gap-2">
           <div className="relative flex-1">
-            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 font-mono text-xs">
+            <span className={`absolute left-3 top-1/2 -translate-y-1/2 font-mono text-xs ${isNeumorphic ? "text-slate-400" : "text-slate-500"}`}>
               @
             </span>
             <input
@@ -350,7 +374,11 @@ export const LabView: React.FC<LabViewProps> = ({
               placeholder="username or bot"
               value={friendHandle}
               onChange={(e) => setFriendHandle(e.target.value)}
-              className="w-full bg-slate-950/80 border border-slate-700 rounded-xl pl-7 pr-3 py-2 text-xs font-mono text-slate-100 placeholder-slate-500 focus:outline-hidden focus:border-cyan-400"
+              className={`w-full rounded-xl pl-7 pr-3 py-2 text-xs font-mono focus:outline-hidden ${
+                isNeumorphic
+                  ? "neu-inset text-slate-800 placeholder-slate-400"
+                  : "bg-slate-950/80 border border-slate-700 text-slate-100 placeholder-slate-500 focus:border-cyan-400"
+              }`}
             />
           </div>
 
@@ -358,7 +386,9 @@ export const LabView: React.FC<LabViewProps> = ({
             id="btn-start-friend-quiz"
             onClick={handleStartDuel}
             className={`px-4 py-2 rounded-xl font-bold text-xs uppercase tracking-wider flex items-center gap-1.5 transition-all active:scale-95 ${
-              isRiso
+              isNeumorphic
+                ? "neu-btn-primary"
+                : isRiso
                 ? "bg-[#4F46E5] text-white border-2 border-[#1E1B18]"
                 : "bg-gradient-to-r from-violet-600 to-indigo-600 text-white hover:brightness-110 shadow-sm"
             }`}
@@ -372,10 +402,10 @@ export const LabView: React.FC<LabViewProps> = ({
       {/* 5. Games Carousel matching video */}
       <div className="space-y-3">
         <div className="flex items-center justify-between">
-          <h3 className="text-xs font-mono uppercase tracking-widest text-slate-400 font-bold">
+          <h3 className={`text-xs font-mono uppercase tracking-widest font-bold ${isNeumorphic ? "text-slate-500" : "text-slate-400"}`}>
             INTERACTIVE GAMES
           </h3>
-          <span className="text-[10px] text-slate-400 font-mono">Bite-sized practice</span>
+          <span className={`text-[10px] font-mono ${isNeumorphic ? "text-slate-500" : "text-slate-400"}`}>Bite-sized practice</span>
         </div>
 
         <div className="space-y-3">
@@ -385,25 +415,29 @@ export const LabView: React.FC<LabViewProps> = ({
               soundFx.playTap();
               setActiveGame("detective");
             }}
-            className={`p-4 rounded-2xl cursor-pointer flex items-center justify-between gap-3 border transition-all hover:scale-[1.01] ${
-              isRiso
+            className={`p-4 rounded-2xl cursor-pointer flex items-center justify-between gap-3 transition-all hover:scale-[1.01] ${
+              isNeumorphic
+                ? "neu-flat text-slate-800"
+                : isRiso
                 ? "bg-[#FFFDF9] border-2 border-[#1E1B18] shadow-[3px_3px_0px_#1E1B18]"
-                : "bg-slate-900/90 border-slate-800 hover:border-cyan-500/50 shadow-md"
+                : "bg-slate-900/90 border border-slate-800 hover:border-cyan-500/50 shadow-md"
             }`}
           >
             <div className="flex items-center gap-3.5">
-              <div className="w-12 h-12 rounded-2xl bg-cyan-500/10 border border-cyan-500/30 flex items-center justify-center text-cyan-400">
+              <div className={`w-12 h-12 rounded-2xl flex items-center justify-center ${
+                isNeumorphic ? "neu-inset text-indigo-600" : "bg-cyan-500/10 border border-cyan-500/30 text-cyan-400"
+              }`}>
                 <Search className="w-6 h-6" />
               </div>
               <div>
-                <h4 className="text-sm font-black text-slate-100 uppercase">AI DETECTIVE</h4>
-                <p className="text-xs text-slate-400 mt-0.5">
+                <h4 className={`text-sm font-black uppercase ${isNeumorphic ? "text-slate-800" : "text-slate-100"}`}>AI DETECTIVE</h4>
+                <p className={`text-xs mt-0.5 ${isNeumorphic ? "text-slate-500" : "text-slate-400"}`}>
                   Swipe • verify true vs hallucination
                 </p>
               </div>
             </div>
 
-            <div className="p-2 rounded-xl bg-slate-950 text-cyan-400 border border-slate-800">
+            <div className={`p-2 rounded-xl ${isNeumorphic ? "neu-btn text-indigo-600" : "bg-slate-950 text-cyan-400 border border-slate-800"}`}>
               <ArrowRight className="w-4 h-4" />
             </div>
           </div>
@@ -414,28 +448,34 @@ export const LabView: React.FC<LabViewProps> = ({
               soundFx.playTap();
               setActiveGame("true-false");
             }}
-            className={`p-4 rounded-2xl cursor-pointer flex items-center justify-between gap-3 border transition-all hover:scale-[1.01] ${
-              isRiso
+            className={`p-4 rounded-2xl cursor-pointer flex items-center justify-between gap-3 transition-all hover:scale-[1.01] ${
+              isNeumorphic
+                ? "neu-flat text-slate-800"
+                : isRiso
                 ? "bg-[#FFFDF9] border-2 border-[#1E1B18] shadow-[3px_3px_0px_#1E1B18]"
-                : "bg-slate-900/90 border-slate-800 hover:border-rose-500/50 shadow-md"
+                : "bg-slate-900/90 border border-slate-800 hover:border-rose-500/50 shadow-md"
             }`}
           >
             <div className="flex items-center gap-3.5">
-              <div className="w-12 h-12 rounded-2xl bg-rose-500/10 border border-rose-500/30 flex items-center justify-center text-rose-400">
+              <div className={`w-12 h-12 rounded-2xl flex items-center justify-center ${
+                isNeumorphic ? "neu-inset text-rose-500" : "bg-rose-500/10 border border-rose-500/30 text-rose-400"
+              }`}>
                 <CheckCircle2 className="w-6 h-6" />
               </div>
               <div>
-                <h4 className="text-sm font-black text-slate-100 uppercase">TRUE OR FALSE?</h4>
-                <p className="text-xs text-slate-400 mt-0.5">Rapid fire AI concept sprint</p>
+                <h4 className={`text-sm font-black uppercase ${isNeumorphic ? "text-slate-800" : "text-slate-100"}`}>TRUE OR FALSE?</h4>
+                <p className={`text-xs mt-0.5 ${isNeumorphic ? "text-slate-500" : "text-slate-400"}`}>Rapid fire AI concept sprint</p>
               </div>
             </div>
 
-            <div className="p-2 rounded-xl bg-slate-950 text-rose-400 border border-slate-800">
+            <div className={`p-2 rounded-xl ${isNeumorphic ? "neu-btn text-rose-500" : "bg-slate-950 text-rose-400 border border-slate-800"}`}>
               <ArrowRight className="w-4 h-4" />
             </div>
           </div>
         </div>
       </div>
+    </div>
+  </div>
 
       {/* Interactive Friend Duel Modal */}
       {activeDuel && (

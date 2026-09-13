@@ -12,6 +12,7 @@ import {
   HelpCircle
 } from "lucide-react";
 import { Stage, Quest, UserProfile, AppTheme } from "../../types";
+import { motion, AnimatePresence } from "motion/react";
 import { soundFx } from "../../utils/sound";
 import { DailyMissionsCard } from "./DailyMissionsCard";
 
@@ -37,6 +38,7 @@ export const HomePathView: React.FC<HomePathViewProps> = ({
   const [chestModal, setChestModal] = useState<{ id: string; sparks: number; xp: number } | null>(null);
 
   const isDark = theme === "obsidian-gold" || theme === "obsidian-noir";
+  const isNeumorphic = theme === "neumorphic";
   const completedSet = new Set(user.completedQuestIds || []);
   const openedChests = new Set(user.openedChests || []);
 
@@ -90,159 +92,198 @@ export const HomePathView: React.FC<HomePathViewProps> = ({
     return pattern[index % 4];
   };
 
-  return (
-    <div id="home-path-view" className="space-y-6 pb-24 max-w-lg mx-auto px-4 pt-2">
-      {/* 1. Mascot Card matching video */}
-      <div
-        className={`p-4 rounded-2xl flex items-start gap-3.5 transition-all ${
-          isDark
-            ? "bg-[#27272A] border border-[#3F3F46] text-[#F4F4F5] shadow-lg"
-            : "bg-[#FFFDF9] border-2 border-[#1E1B18] text-[#1E1B18] shadow-[3px_3px_0px_#1E1B18]"
-        }`}
-      >
-        {/* Robot Mascot Avatar */}
-        <div className="relative shrink-0">
-          <div
-            className={`w-12 h-12 rounded-2xl flex flex-col items-center justify-center p-1 border-2 transition-all ${
-              isDark
-                ? "bg-amber-500/20 border-amber-400/40 text-amber-300"
-                : "bg-[#EEF2FF] border-[#1E1B18] text-[#4F46E5] shadow-[2px_2px_0px_#1E1B18]"
-            }`}
-          >
-            <div className="flex items-center gap-1 mb-0.5">
-              <span className={`w-1.5 h-1.5 rounded-full ${isDark ? "bg-amber-400" : "bg-[#4F46E5]"}`} />
-              <span className={`w-1.5 h-1.5 rounded-full ${isDark ? "bg-amber-400" : "bg-[#4F46E5]"}`} />
-            </div>
-            <div className={`w-4 h-1 rounded-full ${isDark ? "bg-amber-400/60" : "bg-[#4F46E5]/70"}`} />
+  const renderMascotCard = () => (
+    <div
+      className={`p-4 rounded-2xl flex items-start gap-3.5 transition-all ${
+        isNeumorphic
+          ? "neu-raised text-slate-800"
+          : isDark
+          ? "bg-[#27272A] border border-[#3F3F46] text-[#F4F4F5] shadow-lg"
+          : "bg-[#FFFDF9] border-2 border-[#1E1B18] text-[#1E1B18] shadow-[3px_3px_0px_#1E1B18]"
+      }`}
+    >
+      {/* Robot Mascot Avatar */}
+      <div className="relative shrink-0">
+        <div
+          className={`w-12 h-12 rounded-2xl flex flex-col items-center justify-center p-1 transition-all ${
+            isNeumorphic
+              ? "neu-inset text-[#4F46E5]"
+              : isDark
+              ? "bg-amber-500/20 border-amber-400/40 text-amber-300 border-2"
+              : "bg-[#EEF2FF] border-2 border-[#1E1B18] text-[#4F46E5] shadow-[2px_2px_0px_#1E1B18]"
+          }`}
+        >
+          <div className="flex items-center gap-1 mb-0.5">
+            <span className={`w-1.5 h-1.5 rounded-full ${isNeumorphic ? "bg-[#4F46E5]" : isDark ? "bg-amber-400" : "bg-[#4F46E5]"}`} />
+            <span className={`w-1.5 h-1.5 rounded-full ${isNeumorphic ? "bg-[#4F46E5]" : isDark ? "bg-amber-400" : "bg-[#4F46E5]"}`} />
           </div>
-          <span
-            className={`absolute -bottom-1 -right-1 text-[8px] font-mono font-black px-1 py-0.2 rounded-md border ${
-              isDark
-                ? "bg-amber-400 text-zinc-950 border-amber-500"
-                : "bg-[#FEF08A] text-[#1E1B18] border-[#1E1B18]"
+          <div className={`w-4 h-1 rounded-full ${isNeumorphic ? "bg-[#4F46E5]/70" : isDark ? "bg-amber-400/60" : "bg-[#4F46E5]/70"}`} />
+        </div>
+        <span
+          className={`absolute -bottom-1 -right-1 text-[8px] font-mono font-black px-1.5 py-0.2 rounded-md ${
+            isNeumorphic
+              ? "neu-pill-accent text-[#4F46E5]"
+              : isDark
+              ? "bg-amber-400 text-zinc-950 border border-amber-500"
+              : "bg-[#FEF08A] text-[#1E1B18] border border-[#1E1B18]"
+          }`}
+        >
+          BOT
+        </span>
+      </div>
+
+      <div className="flex-1 space-y-1">
+        <div className="flex items-center justify-between">
+          <div
+            className={`text-[11px] font-mono font-bold uppercase tracking-wider ${
+              isNeumorphic ? "text-[#4F46E5]" : isDark ? "text-amber-400" : "text-[#4F46E5]"
             }`}
           >
-            BOT
-          </span>
+            NEUROBOT • ready to assist
+          </div>
+          <button
+            onClick={onOpenTutor}
+            className={`text-[11px] font-mono flex items-center gap-0.5 font-bold ${
+              isNeumorphic
+                ? "neu-btn px-2 py-0.5 rounded-lg text-slate-700 hover:text-indigo-600"
+                : isDark
+                ? "text-zinc-400 hover:text-amber-300"
+                : "text-zinc-600 hover:text-[#1E1B18]"
+            }`}
+          >
+            <span>Ask Tutor</span>
+            <ChevronRight className="w-3 h-3" />
+          </button>
         </div>
+        <p className={`text-xs font-medium leading-snug ${isNeumorphic ? "text-slate-600" : isDark ? "text-zinc-300" : "text-zinc-700"}`}>
+          Hey Learner — your next mission is ready below. Explore at your own pace with bite-size
+          challenges.
+        </p>
+      </div>
+    </div>
+  );
 
-        <div className="flex-1 space-y-1">
-          <div className="flex items-center justify-between">
-            <div
-              className={`text-[11px] font-mono font-bold uppercase tracking-wider ${
-                isDark ? "text-amber-400" : "text-[#4F46E5]"
-              }`}
-            >
-              NEUROBOT • ready to assist
+  const renderDailyMissions = () => (
+    <DailyMissionsCard
+      user={user}
+      activeQuest={currentItem}
+      onStartLesson={handleStartTodayLesson}
+      onOpenTutor={onOpenTutor}
+      onAddXP={(amount) => {
+        if (onAddXP) {
+          onAddXP(amount);
+        }
+      }}
+      theme={theme}
+    />
+  );
+
+  return (
+    <div id="home-path-view" className="w-full max-w-6xl xl:max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-3 sm:pt-6 pb-32">
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+        {/* Left / Main Column: Path Progress & Winding Path */}
+        <div className="lg:col-span-7 xl:col-span-7 space-y-6">
+          {/* Mobile Mascot (shown on smaller screens < lg) */}
+          <div className="lg:hidden">
+            {renderMascotCard()}
+          </div>
+
+          {/* 2. Track Path Progress Card matching video */}
+          <div
+            className={`p-4 rounded-2xl space-y-3 transition-all ${
+              isNeumorphic
+                ? "neu-raised text-slate-800"
+                : isDark
+                ? "bg-[#27272A] border border-[#3F3F46] text-[#F4F4F5] shadow-lg"
+                : "bg-[#FFFDF9] border-2 border-[#1E1B18] text-[#1E1B18] shadow-[3px_3px_0px_#1E1B18]"
+            }`}
+          >
+            <div className="flex items-center justify-between text-xs font-mono">
+              <div>
+                <span className={`text-[10px] uppercase font-bold block ${isNeumorphic ? "text-slate-500" : isDark ? "text-zinc-400" : "text-zinc-500"}`}>
+                  CORE TRACK
+                </span>
+                <span className={`font-black ${isNeumorphic ? "text-slate-800" : isDark ? "text-zinc-100" : "text-[#1E1B18]"}`}>
+                  LESSON {activeIndex + 1} OF {totalLessons}
+                </span>
+              </div>
+              <span className={`font-black ${isNeumorphic ? "text-[#4F46E5]" : isDark ? "text-amber-400" : "text-[#4F46E5]"}`}>
+                {progressPercent}%
+              </span>
             </div>
-            <button
-              onClick={onOpenTutor}
-              className={`text-[11px] font-mono flex items-center gap-0.5 font-bold ${
-                isDark ? "text-zinc-400 hover:text-amber-300" : "text-zinc-600 hover:text-[#1E1B18]"
+
+            {/* Progress Bar */}
+            <div
+              className={`w-full h-3 rounded-full overflow-hidden ${
+                isNeumorphic
+                  ? "neu-inset p-0.5"
+                  : isDark
+                  ? "bg-[#18181B] border-2 border-[#3F3F46]"
+                  : "bg-zinc-100 border-2 border-[#1E1B18]"
               }`}
             >
-              <span>Ask Tutor</span>
-              <ChevronRight className="w-3 h-3" />
+              <div
+                className={`h-full rounded-full transition-all duration-500 ${
+                  isNeumorphic
+                    ? "bg-gradient-to-r from-indigo-500 to-indigo-600 shadow-sm"
+                    : isDark
+                    ? "bg-amber-400"
+                    : "bg-[#4F46E5]"
+                }`}
+                style={{ width: `${progressPercent}%` }}
+              />
+            </div>
+
+            {/* Start Today's Lesson Big Button */}
+            <button
+              id="btn-start-today-lesson"
+              onClick={handleStartTodayLesson}
+              className={`w-full py-3.5 px-4 rounded-xl font-black text-xs sm:text-sm uppercase tracking-wider flex items-center justify-center gap-2 transition-all active:translate-y-1 ${
+                isNeumorphic
+                  ? "neu-btn-primary shadow-lg active:scale-98"
+                  : isDark
+                  ? "bg-amber-400 text-zinc-950 hover:bg-amber-300 font-black shadow-md"
+                  : "bg-[#4F46E5] text-white hover:bg-[#4338CA] border-2 border-[#1E1B18] shadow-[3px_3px_0px_#1E1B18]"
+              }`}
+            >
+              <Play className="w-4 h-4 fill-current" />
+              <span>START TODAY'S LESSON</span>
+              <ChevronRight className="w-4 h-4 stroke-[3]" />
             </button>
           </div>
-          <p className={`text-xs font-medium leading-snug ${isDark ? "text-zinc-300" : "text-zinc-700"}`}>
-            Hey Learner — your next mission is ready below. Explore at your own pace with bite-size
-            challenges.
-          </p>
-        </div>
-      </div>
 
-      {/* 2. Track Path Progress Card matching video */}
-      <div
-        className={`p-4 rounded-2xl space-y-3 transition-all ${
-          isDark
-            ? "bg-[#27272A] border border-[#3F3F46] text-[#F4F4F5] shadow-lg"
-            : "bg-[#FFFDF9] border-2 border-[#1E1B18] text-[#1E1B18] shadow-[3px_3px_0px_#1E1B18]"
-        }`}
-      >
-        <div className="flex items-center justify-between text-xs font-mono">
-          <div>
-            <span className={`text-[10px] uppercase font-bold block ${isDark ? "text-zinc-400" : "text-zinc-500"}`}>
-              CORE TRACK
-            </span>
-            <span className={`font-black ${isDark ? "text-zinc-100" : "text-[#1E1B18]"}`}>
-              LESSON {activeIndex + 1} OF {totalLessons}
-            </span>
+          {/* Mobile Daily Missions (shown on smaller screens < lg) */}
+          <div className="lg:hidden">
+            {renderDailyMissions()}
           </div>
-          <span className={`font-black ${isDark ? "text-amber-400" : "text-[#4F46E5]"}`}>
-            {progressPercent}%
-          </span>
-        </div>
 
-        {/* Progress Bar */}
-        <div
-          className={`w-full h-3 rounded-full overflow-hidden border-2 ${
-            isDark ? "bg-[#18181B] border-[#3F3F46]" : "bg-zinc-100 border-[#1E1B18]"
-          }`}
-        >
-          <div
-            className={`h-full rounded-full transition-all duration-500 ${
-              isDark ? "bg-amber-400" : "bg-[#4F46E5]"
-            }`}
-            style={{ width: `${progressPercent}%` }}
-          />
-        </div>
-
-        {/* Start Today's Lesson Big Button */}
-        <button
-          id="btn-start-today-lesson"
-          onClick={handleStartTodayLesson}
-          className={`w-full py-3.5 px-4 rounded-xl font-black text-xs sm:text-sm uppercase tracking-wider flex items-center justify-center gap-2 transition-all active:translate-y-1 ${
-            isDark
-              ? "bg-amber-400 text-zinc-950 hover:bg-amber-300 font-black shadow-md"
-              : "bg-[#4F46E5] text-white hover:bg-[#4338CA] border-2 border-[#1E1B18] shadow-[3px_3px_0px_#1E1B18]"
-          }`}
-        >
-          <Play className="w-4 h-4 fill-current" />
-          <span>START TODAY'S LESSON</span>
-          <ChevronRight className="w-4 h-4 stroke-[3]" />
-        </button>
-      </div>
-
-      {/* 3. Daily Missions Card with 3 bite-sized goals & progress indicator */}
-      <DailyMissionsCard
-        user={user}
-        activeQuest={currentItem}
-        onStartLesson={handleStartTodayLesson}
-        onOpenTutor={onOpenTutor}
-        onAddXP={(amount) => {
-          if (onAddXP) {
-            onAddXP(amount);
-          }
-        }}
-        theme={theme}
-      />
-
-      {/* 4. Winding Path Section matching video */}
-      <div className="relative pt-4 space-y-12">
+          {/* 4. Winding Path Section matching video */}
+          <div className="relative pt-4 space-y-12 max-w-md sm:max-w-lg mx-auto">
         {/* Stage 1 Header Card */}
         <div
           className={`text-center py-5 px-4 rounded-2xl mx-auto max-w-sm transition-all ${
-            isDark
+            isNeumorphic
+              ? "neu-raised text-slate-800"
+              : isDark
               ? "bg-[#27272A] border border-[#3F3F46] text-[#F4F4F5] shadow-xl"
               : "bg-[#FFFDF9] border-2 border-[#1E1B18] text-[#1E1B18] shadow-[4px_4px_0px_#1E1B18]"
           }`}
         >
           <div
             className={`text-[10px] font-mono tracking-widest uppercase font-bold ${
-              isDark ? "text-amber-400" : "text-[#4F46E5]"
+              isNeumorphic ? "text-[#4F46E5]" : isDark ? "text-amber-400" : "text-[#4F46E5]"
             }`}
           >
             CHAPTER 1
           </div>
           <h2
             className={`text-2xl font-black tracking-tight uppercase mt-0.5 ${
-              isDark ? "text-[#F4F4F5]" : "text-[#1E1B18]"
+              isNeumorphic ? "text-slate-800" : isDark ? "text-[#F4F4F5]" : "text-[#1E1B18]"
             }`}
           >
             WONDER
           </h2>
-          <p className={`text-xs mt-1 font-medium ${isDark ? "text-zinc-400" : "text-zinc-600"}`}>
+          <p className={`text-xs mt-1 font-medium ${isNeumorphic ? "text-slate-600" : isDark ? "text-zinc-400" : "text-zinc-600"}`}>
             Start curious — explore fundamental paradigm shifts
           </p>
         </div>
@@ -296,7 +337,9 @@ export const HomePathView: React.FC<HomePathViewProps> = ({
                     <div className="mb-2 animate-bounce">
                       <div
                         className={`px-3.5 py-1 rounded-full text-[11px] font-black tracking-wider uppercase flex items-center gap-1 shadow-lg ${
-                          isDark
+                          isNeumorphic
+                            ? "neu-btn-primary"
+                            : isDark
                             ? "bg-amber-400 text-zinc-950 border border-amber-500"
                             : "bg-[#4F46E5] text-white border-2 border-[#1E1B18]"
                         }`}
@@ -312,36 +355,42 @@ export const HomePathView: React.FC<HomePathViewProps> = ({
                     {/* Collectible Treasure Chest on Left */}
                     {hasChestLeft && (
                       <div className="absolute left-4 -top-3">
-                        <button
+                        <motion.button
+                          whileHover={!isChestClaimed ? { scale: 1.12, rotate: [-2, 2, 0] } : {}}
+                          whileTap={!isChestClaimed ? { scale: 0.92 } : {}}
                           onClick={() => handleChestClick(chestId, 15, 40)}
                           disabled={isChestClaimed}
-                          className={`flex flex-col items-center p-2 rounded-2xl transition-transform active:scale-95 ${
+                          className={`flex flex-col items-center p-2 rounded-2xl transition-transform ${
                             isChestClaimed
                               ? "opacity-60 grayscale cursor-default"
-                              : "hover:scale-105 animate-pulse"
+                              : "animate-pulse"
                           }`}
                         >
                           <div
-                            className={`w-14 h-12 rounded-2xl flex items-center justify-center border-2 ${
+                            className={`w-14 h-12 rounded-2xl flex items-center justify-center transition-all ${
                               isChestClaimed
-                                ? isDark
-                                  ? "bg-[#18181B] border-zinc-700 text-zinc-500"
-                                  : "bg-zinc-200 border-zinc-400 text-zinc-500"
+                                ? isNeumorphic
+                                  ? "neu-inset text-slate-400"
+                                  : isDark
+                                  ? "bg-[#18181B] border-2 border-zinc-700 text-zinc-500"
+                                  : "bg-zinc-200 border-2 border-zinc-400 text-zinc-500"
+                                : isNeumorphic
+                                ? "neu-raised text-amber-500 hover:text-amber-600"
                                 : isDark
-                                ? "bg-amber-950/40 border-amber-400 text-amber-300"
-                                : "bg-[#FEF08A] border-[#1E1B18] text-[#1E1B18] shadow-[2px_2px_0px_#1E1B18]"
+                                ? "bg-amber-950/40 border-2 border-amber-400 text-amber-300"
+                                : "bg-[#FEF08A] border-2 border-[#1E1B18] text-[#1E1B18] shadow-[2px_2px_0px_#1E1B18]"
                             }`}
                           >
                             <Package className="w-7 h-7" />
                           </div>
                           <span
                             className={`text-[10px] font-mono font-black mt-1 ${
-                              isDark ? "text-amber-400" : "text-[#1E1B18]"
+                              isNeumorphic ? "text-amber-600" : isDark ? "text-amber-400" : "text-[#1E1B18]"
                             }`}
                           >
                             {isChestClaimed ? "Claimed" : "+15 Sparks"}
                           </span>
-                        </button>
+                        </motion.button>
                       </div>
                     )}
 
@@ -352,15 +401,23 @@ export const HomePathView: React.FC<HomePathViewProps> = ({
                       }}
                       className="transition-transform duration-300 flex flex-col items-center"
                     >
-                      <button
+                      <motion.button
                         id={`node-${item.quest.id}`}
+                        whileHover={isUnlocked ? { scale: 1.12 } : {}}
+                        whileTap={isUnlocked ? { scale: 0.92 } : {}}
                         onClick={() => handleNodeClick(item, isUnlocked)}
                         disabled={!isUnlocked}
                         className={`relative w-18 h-18 rounded-full flex items-center justify-center transition-all ${
-                          isCurrent
+                          isNeumorphic
+                            ? isCurrent
+                              ? "neu-btn-primary scale-105"
+                              : isCompleted
+                              ? "neu-flat text-emerald-600 border border-emerald-400/40"
+                              : "neu-inset text-slate-400 cursor-not-allowed opacity-60"
+                            : isCurrent
                             ? isDark
-                              ? "bg-amber-400 text-zinc-950 border-4 border-amber-300 shadow-xl scale-105 active:scale-95"
-                              : "bg-[#4F46E5] text-white border-4 border-[#1E1B18] shadow-[0_6px_0_#1E1B18] scale-105 active:translate-y-1"
+                              ? "bg-amber-400 text-zinc-950 border-4 border-amber-300 shadow-xl scale-105"
+                              : "bg-[#4F46E5] text-white border-4 border-[#1E1B18] shadow-[0_6px_0_#1E1B18] scale-105"
                             : isCompleted
                             ? isDark
                               ? "bg-emerald-600 text-white border-3 border-emerald-400 shadow-md"
@@ -386,7 +443,7 @@ export const HomePathView: React.FC<HomePathViewProps> = ({
                             }`}
                           />
                         )}
-                      </button>
+                      </motion.button>
 
                       {/* Node Label Badge */}
                       <div className="mt-2 text-center max-w-[140px]">
@@ -500,6 +557,14 @@ export const HomePathView: React.FC<HomePathViewProps> = ({
           </div>
         </div>
       </div>
+    </div>
+
+    {/* Right Sticky Sidebar: Desktop & Widescreen */}
+    <div className="hidden lg:block lg:col-span-5 xl:col-span-5 lg:sticky lg:top-20 space-y-6">
+      {renderMascotCard()}
+      {renderDailyMissions()}
+    </div>
+  </div>
 
       {/* Chest claim toast modal */}
       {chestModal && (

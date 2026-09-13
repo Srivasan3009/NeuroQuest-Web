@@ -161,6 +161,7 @@ export const DailyMissionsCard: React.FC<DailyMissionsCardProps> = ({
   theme = "riso-pop"
 }) => {
   const isDark = theme === "obsidian-gold" || theme === "obsidian-noir";
+  const isNeumorphic = theme === "neumorphic";
   const todayKey = useMemo(() => new Date().toISOString().slice(0, 10), []);
 
   // Compute countdown to midnight local time
@@ -400,7 +401,9 @@ export const DailyMissionsCard: React.FC<DailyMissionsCardProps> = ({
     <div
       id="daily-missions-container"
       className={`p-4 sm:p-5 rounded-2xl space-y-4 transition-all ${
-        isDark
+        isNeumorphic
+          ? "neu-raised text-slate-800"
+          : isDark
           ? "bg-[#27272A] border border-[#3F3F46] text-[#F4F4F5] shadow-lg"
           : "bg-[#FFFDF9] border-2 border-[#1E1B18] text-[#1E1B18] shadow-[3px_3px_0px_#1E1B18]"
       }`}
@@ -409,10 +412,12 @@ export const DailyMissionsCard: React.FC<DailyMissionsCardProps> = ({
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
           <div
-            className={`w-7 h-7 rounded-lg flex items-center justify-center border ${
-              isDark
-                ? "bg-amber-400/20 border-amber-400/40 text-amber-300"
-                : "bg-[#EEF2FF] border-[#1E1B18] text-[#4F46E5] shadow-[1px_1px_0px_#1E1B18]"
+            className={`w-7 h-7 rounded-lg flex items-center justify-center ${
+              isNeumorphic
+                ? "neu-inset text-[#4F46E5]"
+                : isDark
+                ? "bg-amber-400/20 border border-amber-400/40 text-amber-300"
+                : "bg-[#EEF2FF] border border-[#1E1B18] text-[#4F46E5] shadow-[1px_1px_0px_#1E1B18]"
             }`}
           >
             <Flame className="w-4 h-4 fill-current" />
@@ -423,7 +428,7 @@ export const DailyMissionsCard: React.FC<DailyMissionsCardProps> = ({
             </h3>
             <span
               className={`text-[10px] font-mono font-bold block ${
-                isDark ? "text-zinc-400" : "text-zinc-500"
+                isNeumorphic ? "text-slate-500" : isDark ? "text-zinc-400" : "text-zinc-500"
               }`}
             >
               3 BITE-SIZED LEARNING GOALS
@@ -432,10 +437,12 @@ export const DailyMissionsCard: React.FC<DailyMissionsCardProps> = ({
         </div>
 
         <div
-          className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-mono font-bold border ${
-            isDark
-              ? "bg-[#18181B] border-zinc-700 text-zinc-300"
-              : "bg-zinc-100 border-zinc-300 text-zinc-700"
+          className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-mono font-bold ${
+            isNeumorphic
+              ? "neu-inset text-slate-600"
+              : isDark
+              ? "bg-[#18181B] border border-zinc-700 text-zinc-300"
+              : "bg-zinc-100 border border-zinc-300 text-zinc-700"
           }`}
         >
           <Clock className="w-3 h-3 text-zinc-400" />
@@ -446,9 +453,9 @@ export const DailyMissionsCard: React.FC<DailyMissionsCardProps> = ({
       {/* Progress Bar Indicator */}
       <div className="space-y-1.5">
         <div className="flex items-center justify-between text-xs font-mono font-bold">
-          <span className={isDark ? "text-zinc-300" : "text-zinc-700"}>
+          <span className={isNeumorphic ? "text-slate-600" : isDark ? "text-zinc-300" : "text-zinc-700"}>
             Progress:{" "}
-            <strong className={isDark ? "text-amber-400" : "text-[#4F46E5]"}>
+            <strong className={isNeumorphic ? "text-[#4F46E5]" : isDark ? "text-amber-400" : "text-[#4F46E5]"}>
               {completedCount} / {totalCount}
             </strong>{" "}
             ({progressPercent}%)
@@ -456,9 +463,13 @@ export const DailyMissionsCard: React.FC<DailyMissionsCardProps> = ({
           <span
             className={`text-[10px] uppercase font-black px-2 py-0.5 rounded-md ${
               allCompleted
-                ? isDark
+                ? isNeumorphic
+                  ? "neu-flat text-emerald-600"
+                  : isDark
                   ? "bg-emerald-500/20 text-emerald-300 border border-emerald-500/40"
                   : "bg-emerald-100 text-emerald-800 border border-emerald-300"
+                : isNeumorphic
+                ? "text-slate-500"
                 : isDark
                 ? "text-zinc-400"
                 : "text-zinc-500"
@@ -470,16 +481,24 @@ export const DailyMissionsCard: React.FC<DailyMissionsCardProps> = ({
 
         {/* Visual Progress Bar with Segment Markers */}
         <div
-          className={`relative w-full h-3 rounded-full overflow-hidden border-2 ${
-            isDark ? "bg-[#18181B] border-[#3F3F46]" : "bg-zinc-100 border-[#1E1B18]"
+          className={`relative w-full h-3 rounded-full overflow-hidden ${
+            isNeumorphic
+              ? "neu-inset p-0.5"
+              : isDark
+              ? "bg-[#18181B] border-2 border-[#3F3F46]"
+              : "bg-zinc-100 border-2 border-[#1E1B18]"
           }`}
         >
           <div
             className={`h-full transition-all duration-500 rounded-full ${
               allCompleted
-                ? isDark
+                ? isNeumorphic
+                  ? "bg-gradient-to-r from-emerald-400 to-teal-500 shadow-sm"
+                  : isDark
                   ? "bg-gradient-to-r from-amber-400 to-emerald-400"
                   : "bg-gradient-to-r from-[#4F46E5] to-[#10B981]"
+                : isNeumorphic
+                ? "bg-gradient-to-r from-indigo-500 to-indigo-600 shadow-sm"
                 : isDark
                 ? "bg-amber-400"
                 : "bg-[#4F46E5]"
@@ -514,25 +533,33 @@ export const DailyMissionsCard: React.FC<DailyMissionsCardProps> = ({
           return (
             <div
               key={mission.id}
-              className={`p-3 rounded-xl border-2 transition-all flex items-center justify-between gap-3 ${
-                isDone
+              className={`p-3 rounded-2xl transition-all flex items-center justify-between gap-3 ${
+                isNeumorphic
+                  ? isDone
+                    ? "neu-inset text-slate-800"
+                    : "neu-flat text-slate-800"
+                  : isDone
                   ? isDark
-                    ? "bg-zinc-900/60 border-zinc-700 text-zinc-100"
-                    : "bg-[#FAFAF8] border-[#1E1B18] shadow-[2px_2px_0px_#1E1B18]"
+                    ? "bg-zinc-900/60 border-2 border-zinc-700 text-zinc-100"
+                    : "bg-[#FAFAF8] border-2 border-[#1E1B18] shadow-[2px_2px_0px_#1E1B18]"
                   : isDark
-                  ? "bg-[#18181B] border-zinc-700 text-zinc-200 hover:border-zinc-500"
-                  : "bg-white border-zinc-300 text-[#1E1B18] hover:border-[#1E1B18]"
+                  ? "bg-[#18181B] border-2 border-zinc-700 text-zinc-200 hover:border-zinc-500"
+                  : "bg-white border-2 border-zinc-300 text-[#1E1B18] hover:border-[#1E1B18]"
               }`}
             >
               {/* Left: Icon and Details */}
               <div className="flex items-center gap-3 min-w-0 flex-1">
                 <div
-                  className={`w-9 h-9 shrink-0 rounded-xl flex items-center justify-center border ${
-                    isDone
+                  className={`w-9 h-9 shrink-0 rounded-xl flex items-center justify-center ${
+                    isNeumorphic
+                      ? isDone
+                        ? "neu-flat text-emerald-600 border border-emerald-400/40"
+                        : "neu-inset text-[#4F46E5]"
+                      : isDone
                       ? isDark
-                        ? "bg-emerald-500/20 border-emerald-400/40 text-emerald-300"
-                        : "bg-emerald-100 border-emerald-400 text-emerald-700"
-                      : mission.iconColor
+                        ? "bg-emerald-500/20 border border-emerald-400/40 text-emerald-300"
+                        : "bg-emerald-100 border border-emerald-400 text-emerald-700"
+                      : `${mission.iconColor} border`
                   }`}
                 >
                   {isDone ? (
@@ -547,7 +574,9 @@ export const DailyMissionsCard: React.FC<DailyMissionsCardProps> = ({
                     <h4
                       className={`text-xs font-bold truncate ${
                         isDone && isClaimed
-                          ? isDark
+                          ? isNeumorphic
+                            ? "text-slate-400 line-through"
+                            : isDark
                             ? "text-zinc-400 line-through"
                             : "text-zinc-500"
                           : ""
@@ -556,14 +585,18 @@ export const DailyMissionsCard: React.FC<DailyMissionsCardProps> = ({
                       {mission.title}
                     </h4>
                     <span
-                      className={`shrink-0 text-[10px] font-mono font-black px-1.5 py-0.2 rounded border ${
-                        isDone
+                      className={`shrink-0 text-[10px] font-mono font-black px-1.5 py-0.2 rounded ${
+                        isNeumorphic
+                          ? isDone
+                            ? "neu-inset text-emerald-600"
+                            : "neu-pill-accent text-[#4F46E5]"
+                          : isDone
                           ? isDark
-                            ? "bg-emerald-400/20 text-emerald-300 border-emerald-400/30"
-                            : "bg-emerald-50 text-emerald-700 border-emerald-200"
+                            ? "bg-emerald-400/20 text-emerald-300 border border-emerald-400/30"
+                            : "bg-emerald-50 text-emerald-700 border border-emerald-200"
                           : isDark
-                          ? "bg-amber-400/20 text-amber-300 border-amber-400/30"
-                          : "bg-amber-50 text-amber-800 border-amber-200"
+                          ? "bg-amber-400/20 text-amber-300 border border-amber-400/30"
+                          : "bg-amber-50 text-amber-800 border border-amber-200"
                       }`}
                     >
                       +{mission.xpReward} XP
@@ -571,7 +604,7 @@ export const DailyMissionsCard: React.FC<DailyMissionsCardProps> = ({
                   </div>
                   <p
                     className={`text-[11px] truncate mt-0.5 ${
-                      isDark ? "text-zinc-400" : "text-zinc-600"
+                      isNeumorphic ? "text-slate-500" : isDark ? "text-zinc-400" : "text-zinc-600"
                     }`}
                   >
                     {mission.description}
@@ -584,8 +617,10 @@ export const DailyMissionsCard: React.FC<DailyMissionsCardProps> = ({
                 {isDone && !isClaimed ? (
                   <button
                     onClick={() => handleClaimReward(mission.id, mission.xpReward)}
-                    className={`px-3 py-1.5 rounded-lg text-xs font-black uppercase tracking-wider flex items-center gap-1 transition-all active:scale-95 animate-pulse ${
-                      isDark
+                    className={`px-3 py-1.5 rounded-xl text-xs font-black uppercase tracking-wider flex items-center gap-1 transition-all active:scale-95 animate-pulse ${
+                      isNeumorphic
+                        ? "neu-btn-primary shadow-md"
+                        : isDark
                         ? "bg-amber-400 text-zinc-950 hover:bg-amber-300 shadow-md"
                         : "bg-[#FEF08A] text-[#1E1B18] border-2 border-[#1E1B18] shadow-[2px_2px_0px_#1E1B18] hover:bg-[#FDE047]"
                     }`}
@@ -595,10 +630,12 @@ export const DailyMissionsCard: React.FC<DailyMissionsCardProps> = ({
                   </button>
                 ) : isDone && isClaimed ? (
                   <span
-                    className={`px-2.5 py-1 rounded-lg text-[10px] font-mono font-bold flex items-center gap-1 border ${
-                      isDark
-                        ? "bg-emerald-950/40 text-emerald-400 border-emerald-500/30"
-                        : "bg-emerald-50 text-emerald-700 border-emerald-200"
+                    className={`px-2.5 py-1 rounded-xl text-[10px] font-mono font-bold flex items-center gap-1 ${
+                      isNeumorphic
+                        ? "neu-inset text-emerald-600"
+                        : isDark
+                        ? "bg-emerald-950/40 text-emerald-400 border border-emerald-500/30"
+                        : "bg-emerald-50 text-emerald-700 border border-emerald-200"
                     }`}
                   >
                     <Check className="w-3 h-3" />
@@ -607,8 +644,10 @@ export const DailyMissionsCard: React.FC<DailyMissionsCardProps> = ({
                 ) : (
                   <button
                     onClick={mission.onAction}
-                    className={`px-3 py-1.5 rounded-lg text-xs font-bold uppercase tracking-wider flex items-center gap-1 transition-all active:scale-95 ${
-                      isDark
+                    className={`px-3 py-1.5 rounded-xl text-xs font-bold uppercase tracking-wider flex items-center gap-1 transition-all active:scale-95 ${
+                      isNeumorphic
+                        ? "neu-btn text-slate-700 hover:text-indigo-600"
+                        : isDark
                         ? "bg-[#27272A] border border-zinc-600 hover:border-amber-400 text-zinc-200"
                         : "bg-[#EEF2FF] border-2 border-[#1E1B18] text-[#1E1B18] shadow-[2px_2px_0px_#1E1B18] hover:bg-[#E0E7FF]"
                     }`}

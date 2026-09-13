@@ -17,70 +17,107 @@ export const CURRICULUM_STAGES: Stage[] = [
         slug: "rules-vs-learning",
         shortDescription: "Explore why classical software fails at perception and how statistical learning fundamentally differs from procedural algorithms.",
         xpReward: 120,
-        estimatedMinutes: 8,
+        estimatedMinutes: 6,
         skillTag: "Paradigm Modeling",
         badgeTitle: "First Spark",
         learn: {
-          title: "Traditional Programming vs Machine Learning",
-          summary: "In classical programming, humans provide Rules + Data to get Answers. In Machine Learning, we provide Data + Answers to synthesize the Rules.",
+          title: "Traditional Code vs. Machine Learning",
+          summary: "In classical programming, humans write the Rules. In Machine Learning, computers discover the Rules by looking at real-world Examples!",
+          qaCards: [
+            {
+              badgeEmoji: "💡",
+              question: "Why can't we just write 'if/else' rules to recognize a cat in a photo?",
+              answer: "Because cats come in infinite breeds, angles, lighting conditions, and poses! Writing every rule by hand would require millions of brittle if/else lines that break the moment a cat turns its head.",
+              analogy: "Like trying to write an exact instruction manual for how to ride a bicycle—you learn by balancing and practicing, not by reading 10,000 rules!"
+            },
+            {
+              badgeEmoji: "🔄",
+              question: "How does Machine Learning flip traditional programming upside down?",
+              answer: "In traditional coding, you feed Data + Rules into a computer to get Answers. In Machine Learning, you feed Data + Answers into the computer, and the computer crafts the Rules!",
+              analogy: "Instead of giving a chef an exact recipe (Rules), you give them 500 delicious cakes (Data + Answers) and ask them to deduce the secret recipe (Model Rules)."
+            },
+            {
+              badgeEmoji: "🎯",
+              question: "What actually guides an AI when it's learning?",
+              answer: "An 'Objective Function' (or Loss Function). It gives the AI a mathematical report card on every guess: 'You were 80% wrong!' The AI nudges its internal dials until the error shrinks to near zero.",
+              analogy: "Playing the game 'Hot or Cold'—every time the AI takes a step, the loss function tells it 'Warmer!' or 'Colder!' until it finds the prize."
+            }
+          ],
           keyConcepts: [
             {
               term: "Deduction vs Induction",
-              definition: "Classical code deduces outputs from predefined logical axioms. ML induces general probabilistic rules from vast empirical observations."
+              definition: "Classical code deduces answers from strict rules. Machine Learning induces general rules from examples."
             },
             {
-              term: "The Brittleness of Rules",
-              definition: "Try writing an if-else statement to recognize a cat in pixels: lighting, angle, and occlusion create infinite combinatorial edge cases."
+              term: "Brittleness",
+              definition: "Why hand-written rules shatter when faced with messy, noisy, real-world sensory data."
             },
             {
-              term: "Objective Function",
-              definition: "A mathematical score quantifying how far current predictions are from target reality, guiding the learning mechanism."
+              term: "Objective / Loss Score",
+              definition: "A mathematical score measuring error, telling the AI how to improve with each try."
             }
           ],
-          contentMarkdown: `### The Classical Wall
-For 60 years, computer science was dominated by procedural rule-crafting:
-\`\`\`ts
-function classifySpam(email: Email): boolean {
-  if (email.text.includes("WIN MONEY") && email.links.length > 3) {
-    return true; // Brittle: Spammers will just change phrasing!
-  }
-  return false;
-}
-\`\`\`
-
-When humans encounter continuous sensory reality—speech waves, camera pixels, medical scans—the boundary between classes is non-linear and high-dimensional. Machine learning replaces hand-engineered conditionals with **parameterized mathematical functions** that iteratively adjust until errors diminish.`,
-          mentalModelDiagram: {
-            type: "comparison",
-            labels: [
-              "Classical: Data + Rules ➔ Answers",
-              "Machine Learning: Data + Answers ➔ Synthesized Rules"
-            ],
-            description: "The inversion of the computational pipeline."
-          },
-          proTip: "Never ask 'what rule explains this?'. Instead ask 'what loss metric enables the machine to discover the rule?'."
+          proTip: "Remember: Never ask 'What hardcoded rule explains this?'. Instead ask: 'What examples and loss score will let the computer learn it?'"
         },
-        interact: {
-          title: "Perceptron Boundary Explorer",
-          instruction: "Manipulate the Decision Threshold and Weights to see how a continuous linear model separates two distinct classes without hardcoded conditionals.",
-          widgetType: "decision-boundary",
-          initialState: {
-            slope: 1.2,
-            intercept: 0,
-            noiseLevel: 0.1
-          },
-          guidanceNotes: [
-            "Notice how moving the slope rotates the separating hyperplane in 2D space.",
-            "Watch the live accuracy gauge update as you isolate the positive class from the negative class."
-          ]
+        conceptCheck: {
+          contextPill: "Step 2: Rapid Concept Check",
+          prompt: "What is the core difference between classical programming and Machine Learning?",
+          options: [
+            {
+              id: "cc-1-a",
+              text: "Classical programming requires data + answers to create rules, while ML only uses rules.",
+              isCorrect: false,
+              explanation: "That's the reverse! Classical programming requires humans to write the rules upfront."
+            },
+            {
+              id: "cc-1-b",
+              text: "In classical coding, humans supply rules + data to get answers; in ML, the computer analyzes data + answers to discover the rules.",
+              isCorrect: true,
+              explanation: "Boom! 🎯 Exactly right! ML inverts the workflow so computers learn the underlying patterns themselves."
+            },
+            {
+              id: "cc-1-c",
+              text: "Machine Learning models don't need any data at all to make decisions.",
+              isCorrect: false,
+              explanation: "ML is fundamentally data-driven—without training examples, the model has nothing to learn from!"
+            },
+            {
+              id: "cc-1-d",
+              text: "Classical programs are written in Python, while AI is always written in HTML.",
+              isCorrect: false,
+              explanation: "Both paradigms use modern programming languages—the difference is the algorithmic philosophy!"
+            }
+          ],
+          encouragement: "Fantastic instinct! You've grasped the foundational shift of the AI revolution."
         },
-        solve: {
-          title: "Mission: Attain 95%+ Linear Separation",
-          missionBrief: "A high-dimensional sensor feed has been projected down to 2 axes. Adjust the boundary slope and threshold until the classification accuracy exceeds 95%.",
-          targetObjective: "Reach ≥ 95% separation accuracy on the noisy dataset.",
-          validationType: "accuracy-threshold",
-          criteria: { targetAccuracy: 95 },
-          firstHint: "Observe the blue cluster centered in the top-left quadrant and the orange cluster in the bottom-right.",
-          secondHint: "Try a negative slope (around -0.9 to -1.3) with an intercept near 0.2 to draw a clean diagonal dividing the two clusters."
+        bossChallenge: {
+          title: "Boss Challenge: The Postal Sorting Catastrophe",
+          scenario: "You are the lead AI Engineer at SwiftPost. The company just spent $2 million on a legacy scanner with 50,000 hand-written if/else rules to sort handwritten zip codes. It fails on 42% of letters because people write the number '7' with slants, crosses, and scribbles.",
+          question: "The CEO wants you to fix it by writing 10,000 more if/else rules. How do you respond and solve this challenge?",
+          options: [
+            {
+              id: "boss-1-a",
+              text: "Agree to write 10,000 more rules because handwritten digits have a predictable finite number of strokes.",
+              isCorrect: false,
+              explanation: "More if/else rules will only create a brittle mess! Variations in handwriting are virtually infinite."
+            },
+            {
+              id: "boss-1-b",
+              text: "Scrap the if/else logic. Collect 100,000 labeled digit images and train a neural network using an objective function to minimize classification error.",
+              isCorrect: true,
+              explanation: "VICTORY! 🏆 High-dimensional sensory data like handwriting is conquered by statistical pattern recognition, not manual rulebooks!"
+            },
+            {
+              id: "boss-1-c",
+              text: "Switch to sorting mail solely by envelope color rather than reading postal codes.",
+              isCorrect: false,
+              explanation: "That ignores the core mission of delivering mail to the right address!"
+            }
+          ],
+          bossAvatar: "🤖",
+          bossQuote: "'Just write more if/else statements!' — CEO of Legacy Code Corp",
+          victoryMessage: "LEGACY BOSS DEFEATED! 🚀 You showed that real-world perception demands learning systems, not endless if/else spaghetti.",
+          deepDiveExplanation: "Sensory reality (pixels, audio, medical scans) has infinite combinations. Machine learning solves this by mapping high-dimensional inputs to probabilities via continuous parameter optimization."
         },
         prove: {
           question: "Why does classical rule-based programming fail when processing unstructured sensory data like handwritten digits?",
@@ -97,15 +134,9 @@ When humans encounter continuous sensory reality—speech waves, camera pixels, 
               text: "CPUs cannot process pixel data without converting it to text first.",
               isCorrect: false,
               explanation: "Incorrect. CPUs process binary buffers and matrix data natively."
-            },
-            {
-              id: "opt-3",
-              text: "Traditional programs can only execute 1,000 instructions per second.",
-              isCorrect: false,
-              explanation: "Modern CPUs execute billions of instructions per second; processing speed is not the structural bottleneck."
             }
           ],
-          deepDiveExplanation: "The breakthrough of statistical learning is that instead of human engineers enumerating all variations of 'what a 7 looks like', the model learns a manifold mapping raw pixel arrays to class probabilities via gradient optimization."
+          deepDiveExplanation: "The breakthrough of statistical learning is that instead of human engineers enumerating all variations, the model learns a manifold mapping raw pixels to class probabilities."
         }
       }
     ]
@@ -126,58 +157,101 @@ When humans encounter continuous sensory reality—speech waves, camera pixels, 
         slug: "overfitting-vs-bias",
         shortDescription: "Discover why a model that scores 100% on training tests often catastrophically fails in the real world.",
         xpReward: 140,
-        estimatedMinutes: 10,
+        estimatedMinutes: 6,
         skillTag: "Regularization",
         badgeTitle: "Boundary Breaker",
         learn: {
           title: "The Bias-Variance Tradeoff",
-          summary: "Learning is not memorization. An ideal model captures true underlying physical signal while ignoring idiosyncratic dataset noise.",
+          summary: "True learning is not memorization! A great AI model discovers real underlying patterns while ignoring random flukes and noise.",
+          qaCards: [
+            {
+              badgeEmoji: "🧠",
+              question: "What is 'Overfitting' and why is it dangerous in AI?",
+              answer: "Overfitting happens when an AI model memorizes every tiny detail, quirk, and noise in its training examples. It scores 100% on practice tests, but completely crashes when given a new, unseen question in the real world!",
+              analogy: "Like a student who memorizes the exact answer 'B' to Question 4 on a practice test, but fails the actual exam because the teacher shuffled the multiple-choice order!"
+            },
+            {
+              badgeEmoji: "⚖️",
+              question: "What is 'Underfitting'?",
+              answer: "Underfitting happens when your model is too simple to capture even the basic trend in the data. It's like trying to draw a straight line through a roller coaster curve.",
+              analogy: "Like studying for a biology exam by reading only the back cover of the textbook—you didn't learn enough details to answer anything."
+            },
+            {
+              badgeEmoji: "🛡️",
+              question: "How do AI engineers prevent models from memorizing cheat sheets?",
+              answer: "We use techniques like 'Validation Splits' (testing on unseen data), 'Dropout' (randomly turning off neurons so the model can't rely on shortcuts), and 'Regularization' (penalizing overly complex boundaries).",
+              analogy: "Like a basketball coach making players practice with their non-dominant hand or on different courts so they master the actual game, not just one lucky spot on the floor."
+            }
+          ],
           keyConcepts: [
             {
-              term: "Underfitting (High Bias)",
-              definition: "The hypothesis space is too simplistic to capture the fundamental trend (e.g., fitting a straight line to sinusoidal data)."
+              term: "Generalization",
+              definition: "The ability of an AI to perform accurately on new, never-before-seen inputs."
             },
             {
               term: "Overfitting (High Variance)",
-              definition: "The model memorizes noise and quirks in training samples, yielding zero training loss but horrific test validation error."
+              definition: "Memorizing training noise, leading to near-zero training error but terrible real-world performance."
             },
             {
-              term: "Generalization Gap",
-              definition: "The mathematical disparity between training loss and test/validation loss on unseen distributions."
+              term: "Validation Set",
+              definition: "A hidden stash of test data kept secret from the AI during training to check its true intelligence."
             }
           ],
-          contentMarkdown: `### The Student Who Memorizes the Exam
-Imagine a student preparing for a physics exam:
-* **Student A** memorizes the exact numbers of practice question #4 (Overfitting).
-* **Student B** understands Newton's 2nd law: $F = m \\cdot a$ (Generalization).
-
-When a new test arrives with slightly altered numerical parameters, Student A fails, while Student B solves it effortlessly.
-
-In Machine Learning, we enforce generalization through techniques like **Weight Decay (L2 Regularization)**, **Dropout**, and **Validation Early Stopping**.`,
-          proTip: "A low training error is never a victory by itself. The validation curve is the only true barometer of intelligence."
+          proTip: "A 100% training score is almost always a warning sign, not a victory! Always check the validation curve."
         },
-        interact: {
-          title: "Decision Boundary & Model Capacity Lab",
-          instruction: "Adjust the model complexity and regularization parameter. Notice how high complexity bends the boundary around single outlier points, creating fragile islands.",
-          widgetType: "decision-boundary",
-          initialState: {
-            slope: 0.8,
-            intercept: -0.2,
-            noiseLevel: 0.3
-          },
-          guidanceNotes: [
-            "Smooth boundaries generalize better to future unknown samples.",
-            "Watch how hyper-twisting the line introduces extreme variance."
-          ]
+        conceptCheck: {
+          contextPill: "Step 2: Rapid Concept Check",
+          prompt: "An AI model gets 99.9% accuracy on training data, but only 55% accuracy on new user data. What is happening?",
+          options: [
+            {
+              id: "cc-2-a",
+              text: "The model is underfitting and needs to be made simpler.",
+              isCorrect: false,
+              explanation: "If it were underfitting, it wouldn't score 99.9% on training data."
+            },
+            {
+              id: "cc-2-b",
+              text: "The model has overfitted by memorizing training quirks instead of learning generalizable patterns.",
+              isCorrect: true,
+              explanation: "Nailed it! 🔥 High training score + terrible validation score is the classic signature of overfitting."
+            },
+            {
+              id: "cc-2-c",
+              text: "The computer needs to be restarted to clear RAM.",
+              isCorrect: false,
+              explanation: "Overfitting is a mathematical problem in model training, not a memory cache bug."
+            }
+          ],
+          encouragement: "Spot on! You can now diagnose the single most common disease in machine learning."
         },
-        solve: {
-          title: "Mission: Generalize Across Train and Test Splits",
-          missionBrief: "Tune the decision boundary to maintain balanced classification (>92%) while ensuring the decision margin stays wide enough to resist noisy jitter.",
-          targetObjective: "Find a boundary line that achieves ≥ 92% accuracy across both training clusters.",
-          validationType: "accuracy-threshold",
-          criteria: { targetAccuracy: 92 },
-          firstHint: "Don't try to wrap around every isolated outlier. Focus on the core density center of both clusters.",
-          secondHint: "Set the slope between -1.0 and -1.2 and intercept around 0.1 to cleanly bisect the feature space."
+        bossChallenge: {
+          title: "Boss Challenge: The Clinic Tumor Detector",
+          scenario: "Dr. Alvarez trains a vision model to detect skin tumors. On her laboratory hospital photos, the model achieves 99.8% precision! But when deployed to rural clinics with different cameras and room lighting, its accuracy plunges to 61%. Upon inspection, you find that in the training lab, doctors always placed a bright yellow surgical ruler next to malignant tumors.",
+          question: "What did the AI actually learn, and how do you fix it before patients are misdiagnosed?",
+          options: [
+            {
+              id: "boss-2-a",
+              text: "The model learned to detect the yellow ruler instead of the tumor! We must augment training data without rulers and add regularization to force genuine tissue analysis.",
+              isCorrect: true,
+              explanation: "GENIUS DIAGNOSIS! 🏆 The model found a lazy shortcut (the yellow ruler) in the training data. This is real-world high variance / spurious correlation!"
+            },
+            {
+              id: "boss-2-b",
+              text: "Tell all rural clinics to purchase identical expensive yellow rulers to keep the AI happy.",
+              isCorrect: false,
+              explanation: "That leaves the patient in extreme danger if someone has a tumor without a ruler nearby!"
+            },
+            {
+              id: "boss-2-c",
+              text: "Train the model for 100 more epochs on the same lab photos.",
+              isCorrect: false,
+              explanation: "Training longer on the flawed data will only make the ruler memorization worse!"
+            }
+          ],
+          bossAvatar: "🩺",
+          bossQuote: "'It scored 99.8% in the lab, so it must be ready for patients!' — Overconfident Lab Director",
+          victoryMessage: "CLINICAL BOSS CRUSHED! 🌟 You saved patient lives by recognizing spurious correlations and demanding true generalization.",
+          deepDiveExplanation: "Models exploit whatever feature minimizes training loss fastest. If an accidental artifact (like a ruler or watermark) correlates with labels, the model will latch onto it unless penalized."
         },
         prove: {
           question: "A deep learning model achieves 99.8% accuracy on training data, but only 64.2% accuracy on validation data. What is the fundamental cause and remedy?",
@@ -187,22 +261,16 @@ In Machine Learning, we enforce generalization through techniques like **Weight 
               id: "opt-1",
               text: "The model has severely overfitted to training artifacts; apply regularization, dropout, or collect more diverse validation data.",
               isCorrect: true,
-              explanation: "Correct! The massive gap between training (99.8%) and validation (64.2%) is the quintessential textbook signature of overfitting."
+              explanation: "Correct! The massive gap between training and validation is the textbook signature of overfitting."
             },
             {
               id: "opt-2",
               text: "The learning rate is too small, causing the weights to freeze in a local minimum.",
               isCorrect: false,
-              explanation: "If the learning rate were frozen, it would not have achieved 99.8% training accuracy."
-            },
-            {
-              id: "opt-3",
-              text: "The model has too few layers and lacks capacity to express the function.",
-              isCorrect: false,
-              explanation: "If it lacked capacity (underfitting), training accuracy would be low, not 99.8%."
+              explanation: "If weights were frozen, training accuracy would not be 99.8%."
             }
           ],
-          deepDiveExplanation: "High variance occurs when model capacity exceeds what the dataset's true signal can constrain. Adding L2 regularization penalizes extreme weight magnitudes, forcing the network to favor smooth, robust representations."
+          deepDiveExplanation: "Adding regularization penalizes extreme weight magnitudes, forcing the network to favor smooth, robust representations."
         }
       }
     ]
@@ -223,89 +291,120 @@ In Machine Learning, we enforce generalization through techniques like **Weight 
         slug: "artificial-neuron-mechanics",
         shortDescription: "Dissect the atomic unit of modern deep learning: linear dot products passed through non-linear activation functions.",
         xpReward: 160,
-        estimatedMinutes: 12,
+        estimatedMinutes: 7,
         skillTag: "Neuron Computation",
         badgeTitle: "Synaptic Sculptor",
         learn: {
           title: "How an Artificial Neuron Thinks",
-          summary: "A neuron performs a dot product between its input vector and weight vector, adds a scalar bias, and passes the scalar through an activation function.",
-          keyConcepts: [
+          summary: "A neuron takes multiple inputs, multiplies them by importance weights, adds a bias threshold, and runs the result through an activation function to decide: FIRE or STAY SILENT!",
+          qaCards: [
             {
-              term: "Dot Product (z = w · x + b)",
-              definition: "Multiplies each incoming feature by its corresponding synaptic weight and adds a threshold bias to shift the activation point."
+              badgeEmoji: "⚡",
+              question: "What are 'Weights' and 'Bias' inside a neuron?",
+              answer: "Weights ($w$) represent how much the neuron cares about each input signal (high weight = super important, negative weight = red flag!). The Bias ($b$) is the neuron's baseline threshold for firing before any input arrives.",
+              analogy: "Deciding whether to go to an outdoor concert: Weight 1 is 'Is it raining?' (-10), Weight 2 is 'Is your favorite band playing?' (+8), and Bias is 'How much do you love music in general?' (+3)."
             },
             {
-              term: "Non-Linear Activation",
-              definition: "Without non-linear activations (like ReLU, Sigmoid, or GELU), stacking 100 neural layers mathematically collapses into a single boring linear regression!"
+              badgeEmoji: "🔀",
+              question: "What is an 'Activation Function' (like ReLU)?",
+              answer: "It is a mathematical gate that introduces non-linearity. ReLU (Rectified Linear Unit) is super simple: if the sum is negative, output 0; if positive, pass the number straight through!",
+              analogy: "Like a light switch with a safety spring: slight nudges below the trigger line do nothing (0), but once you push past the threshold, the light flips on!"
             },
             {
-              term: "ReLU (Rectified Linear Unit)",
-              definition: "f(z) = max(0, z). The workhorse of modern deep learning: computationally inexpensive and avoids vanishing gradients for positive inputs."
+              badgeEmoji: "💥",
+              question: "What happens if a 100-layer deep neural network has NO activation functions?",
+              answer: "Without non-linear activations, all 100 layers mathematically collapse into a single boring linear equation! No matter how deep your network is, it could only draw flat straight lines.",
+              analogy: "Like stacking 100 transparent flat sheets of glass: you still just have a flat window! But bend or curve the glass (non-linearity), and you can build telescopes, microscopes, and cameras."
             }
           ],
-          contentMarkdown: `### The Neuron Formula
-Every single node in a 400-billion parameter model executes this fundamental arithmetic:
-
-$$\\hat{y} = \\sigma\\left( \\sum_{i=1}^n w_i x_i + b \\right)$$
-
-* $x_i$: The incoming signals (pixel intensity, word embedding dimension, audio frequency).
-* $w_i$: The trainable weights, determining feature sensitivity.
-* $b$: The bias term, dictating how easily this neuron activates regardless of input.
-* $\\sigma$: The non-linear activation function.
-
-If $\\sigma(z)$ were linear ($f(z) = c \\cdot z$), no matter how many millions of layers you stacked, the entire network could only draw flat planes! Non-linearity allows neural networks to approximate **any arbitrary continuous function** (Universal Approximation Theorem).`,
-          proTip: "Think of the weight as 'importance of this signal' and the bias as 'baseline skepticism' before the neuron decides to fire."
+          keyConcepts: [
+            {
+              term: "Linear Combination (z = w · x + b)",
+              definition: "Multiplying inputs by weights and adding the bias offset."
+            },
+            {
+              term: "Non-Linearity",
+              definition: "The mathematical magic that allows neural networks to learn curves, boundaries, and intricate patterns."
+            },
+            {
+              term: "ReLU",
+              definition: "max(0, z) — the lightning-fast activation function powering modern AI."
+            }
+          ],
+          proTip: "Think of Weights as 'signal volume' and Bias as 'the barrier to entry' before the neuron speaks."
         },
-        interact: {
-          title: "Interactive Artificial Neuron Workbench",
-          instruction: "Slide weights $w_1$, $w_2$, and bias $b$. Toggle between ReLU, Sigmoid, and Step activations. Observe the pre-activation sum $z$ and final activated output.",
-          widgetType: "neuron-weights",
-          initialState: {
-            w1: 1.5,
-            w2: -0.8,
-            bias: 0.2,
-            activation: "relu",
-            x1: 0.8,
-            x2: 0.5
-          },
-          guidanceNotes: [
-            "Notice how increasing bias shifts the firing threshold.",
-            "Compare how Sigmoid squashes output between [0, 1] while ReLU truncates negative sums to zero."
-          ]
+        conceptCheck: {
+          contextPill: "Step 2: Rapid Concept Check",
+          prompt: "If an artificial neuron receives input x=4, weight w=3, and bias b=-5, using ReLU activation: what is the output?",
+          options: [
+            {
+              id: "cc-3-a",
+              text: "z = (4 × 3) + (-5) = 7. Since 7 > 0, ReLU outputs 7.",
+              isCorrect: true,
+              explanation: "Math Master! 🌟 (4 × 3 = 12), (12 - 5 = 7). Since 7 is positive, ReLU passes 7 right through!"
+            },
+            {
+              id: "cc-3-b",
+              text: "ReLU always converts everything into 0, so the output is 0.",
+              isCorrect: false,
+              explanation: "ReLU only turns negative numbers to 0. Positive numbers are preserved!"
+            },
+            {
+              id: "cc-3-c",
+              text: "Output is -5 because bias overrides everything.",
+              isCorrect: false,
+              explanation: "Bias is added into the weighted sum, not an override!"
+            }
+          ],
+          encouragement: "You're thinking like a GPU core! High-speed matrix math is second nature to you."
         },
-        solve: {
-          title: "Mission: Engineer a Logical AND Gate Neuron",
-          missionBrief: "Configure weights $w_1$, $w_2$, and bias $b$ so that the neuron outputs > 0.8 ONLY when both inputs ($x_1=1$, $x_2=1$) are active, and outputs < 0.2 for all other truth table pairs (0,0), (0,1), (1,0).",
-          targetObjective: "Configure weights and bias to solve the binary logical AND problem.",
-          validationType: "neuron-threshold",
-          criteria: { gateType: "AND" },
-          firstHint: "Both inputs must contribute positively to push the sum past the firing threshold.",
-          secondHint: "Set $w_1 \\approx 1.5$, $w_2 \\approx 1.5$, and a negative bias $b \\approx -2.0$. If only one input is 1, $1.5 - 2.0 = -0.5$ (inactive). If both are 1, $1.5 + 1.5 - 2.0 = +1.0$ (fires!)."
+        bossChallenge: {
+          title: "Boss Challenge: The Rogue Linear Architecture",
+          scenario: "An arrogant junior architect at MegaAI removes all activation functions from a 50-layer deep image recognition network to 'save 15% compute time'. He claims: 'It has 50 layers, so it's obviously 50 times smarter than a single layer!'",
+          question: "What actually happens to this 50-layer network, and why does it fail at classifying handwritten digits?",
+          options: [
+            {
+              id: "boss-3-a",
+              text: "The network burns out the GPU fans because linear algebra generates excessive friction.",
+              isCorrect: false,
+              explanation: "Linear algebra is pure software matrix multiplication; it doesn't cause mechanical friction!"
+            },
+            {
+              id: "boss-3-b",
+              text: "The entire 50-layer network collapses mathematically into a single linear equation, unable to carve out complex decision curves.",
+              isCorrect: true,
+              explanation: "BOOM! K.O.! 🥊 Linear functions composed together remain strictly linear. Without non-linear activations, 50 layers is equivalent to 1 flat layer!"
+            },
+            {
+              id: "boss-3-c",
+              text: "It becomes 50 times faster and achieves super-intelligence.",
+              isCorrect: false,
+              explanation: "It loses the ability to recognize non-linear shapes like circles, eyes, or curved strokes entirely!"
+            }
+          ],
+          bossAvatar: "📐",
+          bossQuote: "'Why bend reality with non-linearity when straight lines are so neat?' — The Linear purist",
+          victoryMessage: "ARCHITECTURAL BOSS SHATTERED! ⚡ You defended the Universal Approximation Theorem and saved the deep network.",
+          deepDiveExplanation: "The composition of linear functions is always strictly linear: W2(W1x + b1) + b2 = (W2·W1)x + (W2·b1 + b2). Non-linear activations warp coordinate space, allowing deep networks to isolate intricate features."
         },
         prove: {
-          question: "What catastrophic mathematical problem occurs if a 50-layer deep neural network uses ONLY linear activation functions $f(z) = z$?",
-          scenario: "An engineer builds a 50-layer neural network for image recognition but removes all non-linear activation functions to speed up training.",
+          question: "What catastrophic mathematical problem occurs if a 50-layer deep neural network uses ONLY linear activation functions?",
+          scenario: "An engineer builds a 50-layer neural network for image recognition but removes all non-linear activation functions.",
           options: [
             {
               id: "opt-1",
-              text: "The entire 50-layer network mathematically collapses into an equivalent single-layer linear model, unable to learn complex non-linear patterns.",
+              text: "The entire 50-layer network mathematically collapses into an equivalent single-layer linear model.",
               isCorrect: true,
-              explanation: "Exactly! The composition of linear functions is always strictly linear: $W_2(W_1 x + b_1) + b_2 = (W_2 W_1)x + (W_2 b_1 + b_2)$."
+              explanation: "Exactly! The composition of linear functions is always strictly linear."
             },
             {
               id: "opt-2",
               text: "The weights will immediately explode to infinity during the first forward pass.",
               isCorrect: false,
-              explanation: "Forward pass does not explode simply due to linearity unless initialization weights are enormous."
-            },
-            {
-              id: "opt-3",
-              text: "The network will overfit immediately to every sample.",
-              isCorrect: false,
-              explanation: "A linear model has very low capacity; it underfits severely rather than overfitting."
+              explanation: "Forward pass does not explode simply due to linearity."
             }
           ],
-          deepDiveExplanation: "Non-linear activations (ReLU, GELU, Swish) bend the coordinate space at each layer. This geometric warping allows deep networks to carve out complex decision boundaries capable of recognizing intricate visual textures and syntactic structures."
+          deepDiveExplanation: "Non-linear activations bend the coordinate space at each layer, enabling deep networks to carve out complex boundaries."
         }
       }
     ]
@@ -326,83 +425,120 @@ If $\\sigma(z)$ were linear ($f(z) = c \\cdot z$), no matter how many millions o
         slug: "tokens-and-vector-embeddings",
         shortDescription: "Learn how Large Language Models ingest human language as discrete token IDs and map them into dense geometric vector spaces.",
         xpReward: 180,
-        estimatedMinutes: 12,
+        estimatedMinutes: 7,
         skillTag: "Token Mechanics",
         badgeTitle: "Embedding Alchemist",
         learn: {
           title: "Language as High-Dimensional Geometry",
-          summary: "Computers cannot read characters directly. Text is sliced into tokens (subwords) and converted into floating-point vectors where spatial proximity encodes semantic meaning.",
+          summary: "Computers don't read words or letters! They chop language into 'Tokens' and convert each token into a list of numbers (a Vector) where semantic meaning turns into 3D/HD space coordinates.",
+          qaCards: [
+            {
+              badgeEmoji: "🧩",
+              question: "What is a 'Token' in an LLM like Gemini or ChatGPT?",
+              answer: "A token is a common chunk of characters (usually 3 to 4 letters, or ~0.75 words). Common words like 'apple' are 1 token, while rare or complex words like 'unbelievable' are split into subwords: 'un', 'believ', 'able'.",
+              analogy: "Like LEGO bricks! Rather than manufacturing a custom plastic mold for every single object in the universe, LEGO gives you standard brick shapes that click together into anything."
+            },
+            {
+              badgeEmoji: "🗺️",
+              question: "What is a 'Vector Embedding'?",
+              answer: "An embedding maps every token into an invisible map with thousands of dimensions. Words with similar meanings (like 'king' and 'queen', or 'puppy' and 'dog') land close together on this conceptual map.",
+              analogy: "Like a grocery store layout: apples, oranges, and bananas are in the produce aisle; milk and yogurt are in dairy. The closer two items sit on the shelves, the more related they are!"
+            },
+            {
+              badgeEmoji: "📐",
+              question: "How can computers do math on words: 'King - Man + Woman = Queen'?",
+              answer: "Because semantic concepts have consistent geometric directions in vector space! The direction arrow from 'Man' to 'Woman' is virtually identical to the arrow from 'King' to 'Queen' (representing gender).",
+              analogy: "If you take a flight from Paris to France, and then apply that exact same compass direction from Tokyo, you arrive in Japan!"
+            }
+          ],
           keyConcepts: [
             {
               term: "Subword Tokenization (BPE)",
-              definition: "Balances dictionary size with vocabulary coverage. Rare words are split into chunks (e.g., 'unbelievable' ➔ 'un' + 'believ' + 'able')."
+              definition: "Breaking words into efficient subword chunks so the AI never runs out of vocabulary."
             },
             {
               term: "Embedding Vector",
-              definition: "A continuous array of numbers (e.g. 1536 dimensions in OpenAI text-embedding-3 or 768 in Gemini) capturing syntactic and conceptual relationships."
+              definition: "A coordinate list representing semantic meaning in multi-dimensional space."
             },
             {
               term: "Cosine Similarity",
-              definition: "Measures the cosine of the angle between two semantic vectors. Proximity of 1.0 means identical semantic orientation."
+              definition: "Measuring the angle between two concept arrows to tell how closely their meanings align."
             }
           ],
-          contentMarkdown: `### The Vector Geometry of Meaning
-When text is passed into an embedding model:
-1. **Tokenize:** "King", "Queen", "Man", "Woman" become integer IDs.
-2. **Lookup:** Each token ID maps to a row in a learned embedding matrix.
-3. **Vector Arithmetic:**
-$$\\vec{v}_{\\text{King}} - \\vec{v}_{\\text{Man}} + \\vec{v}_{\\text{Woman}} \\approx \\vec{v}_{\\text{Queen}}$$
-
-In this multi-thousand-dimensional coordinate system, semantic relationships become geometric directions:
-* The vector from "Paris" to "France" is parallel to the vector from "Tokyo" to "Japan" (the 'capital-of' vector offset!).`,
-          proTip: "When writing prompts or building RAG pipelines, remember that LLMs don't see words; they see token sequences and distances in vector manifolds."
+          proTip: "When you talk to an LLM, remember: it doesn't see English sentences. It calculates vector trajectories through a semantic universe."
         },
-        interact: {
-          title: "Semantic Vector Space & Tokenizer",
-          instruction: "Type custom phrases to inspect how subword tokenization splits text into tokens, and visualize cosine distances in projected 2D semantic space.",
-          widgetType: "token-embeddings",
-          initialState: {
-            sampleText: "Artificial intelligence transforms learning forever.",
-            comparisonWords: ["robot", "neural", "computer", "banana", "galaxy"]
-          },
-          guidanceNotes: [
-            "Observe how related technological terms cluster together in vector proximity.",
-            "Inspect how punctuation and whitespace often become prefixes of tokens."
-          ]
+        conceptCheck: {
+          contextPill: "Step 2: Rapid Concept Check",
+          prompt: "Why do modern LLMs use subword tokenization instead of whole-word dictionaries?",
+          options: [
+            {
+              id: "cc-4-a",
+              text: "Because whole-word dictionaries would fail completely whenever someone invents a new word, writes code, or makes a typo.",
+              isCorrect: true,
+              explanation: "Spot on! 🎯 Subwords let the model spell and construct any word in the universe from smaller phonetic pieces."
+            },
+            {
+              id: "cc-4-b",
+              text: "Because computers can only store 26 letters at a time.",
+              isCorrect: false,
+              explanation: "Computers have terabytes of memory; the issue is handling new and rare words gracefully!"
+            },
+            {
+              id: "cc-4-c",
+              text: "Subword tokenization prevents the AI from consuming electricity.",
+              isCorrect: false,
+              explanation: "Tokenization is text preprocessing, not electrical engineering!"
+            }
+          ],
+          encouragement: "Brilliant! You understand how AI turns human language into mathematical ingredients."
         },
-        solve: {
-          title: "Mission: Maximize Semantic Cosine Alignment",
-          missionBrief: "Craft a query vector that achieves > 0.85 cosine similarity with target concept 'Autonomous Neural Agent' while staying divergent (< 0.40) from 'Culinary Recipe'.",
-          targetObjective: "Generate a concept representation that aligns with autonomous intelligence.",
-          validationType: "token-alignment",
-          criteria: { targetKeyword: "Autonomous Neural Agent" },
-          firstHint: "Use semantically rich keywords related to self-directed machine decision making and deep architecture.",
-          secondHint: "Try combining terms like 'Reinforcement learning neural agent planning autonomously'."
+        bossChallenge: {
+          title: "Boss Challenge: The Hallucinating Search Engine",
+          scenario: "Your startup builds an AI customer support bot. A customer types: 'My screen is displaying weird purple glitches.' The old keyword search system searched for the exact words 'screen', 'displaying', 'purple', and found 0 matching documents because the manual only uses the term 'Monitor Chromatic Aberration Artifacts'.",
+          question: "How do vector embeddings fix this search problem instantly?",
+          options: [
+            {
+              id: "boss-4-a",
+              text: "Vector embeddings encode conceptual meaning, so 'screen glitches' and 'monitor artifacts' sit extremely close in embedding space, returning the correct document!",
+              isCorrect: true,
+              explanation: "BULLSEYE! 🚀 Semantic vector search understands concepts rather than matching exact spelling!"
+            },
+            {
+              id: "boss-4-b",
+              text: "Force the user to memorize the formal engineering manual before submitting a question.",
+              isCorrect: false,
+              explanation: "That would make customer support unbearable for real humans!"
+            },
+            {
+              id: "boss-4-c",
+              text: "Delete all documentation that doesn't mention the color purple.",
+              isCorrect: false,
+              explanation: "Deleting documentation will only break more customer queries!"
+            }
+          ],
+          bossAvatar: "🔍",
+          bossQuote: "'If the exact letters don't match, the answer does not exist!' — Keyword Grep Boss",
+          victoryMessage: "GREP BOSS VANQUISHED! 🌌 Semantic vector embeddings bridge the gap between human language and technical documentation.",
+          deepDiveExplanation: "Keyword search fails when vocabulary diverges. Dense vector embeddings project both queries and documents into a shared conceptual manifold, enabling semantic retrieval (RAG) that survives synonyms."
         },
         prove: {
-          question: "Why do modern LLMs use subword tokenization (like Byte-Pair Encoding) rather than whole-word tokenization?",
+          question: "Why do modern LLMs use subword tokenization rather than whole-word tokenization?",
           scenario: "You are designing the tokenizer for a multilingual AI model supporting 40 programming and human languages.",
           options: [
             {
               id: "opt-1",
-              text: "Whole-word tokenization causes an infinite vocabulary problem with out-of-vocabulary (OOV) errors for compound words, typos, and code identifiers.",
+              text: "Whole-word tokenization causes an infinite vocabulary problem with out-of-vocabulary (OOV) errors for compound words and typos.",
               isCorrect: true,
-              explanation: "Spot on! Whole-word dictionaries balloon into millions of entries and still fail on new terms. Subwords handle any arbitrary string gracefully."
+              explanation: "Spot on! Subwords handle any arbitrary string gracefully."
             },
             {
               id: "opt-2",
               text: "Subword tokenization guarantees that every token is exactly 3 letters long.",
               isCorrect: false,
-              explanation: "Tokens vary in character length based on frequency statistics (from 1 character to full words)."
-            },
-            {
-              id: "opt-3",
-              text: "Subword tokenization prevents the model from generating repetitive sentences.",
-              isCorrect: false,
-              explanation: "Repetition is governed by sampling temperature, frequency penalties, and attention mechanisms, not the tokenizer."
+              explanation: "Tokens vary in character length based on frequency statistics."
             }
           ],
-          deepDiveExplanation: "BPE starts with individual bytes/characters and iteratively merges the most frequent adjacent pairs. This enables the model to represent common words like 'the' as a single token while seamlessly constructing rare scientific terms from known phonetic sub-units."
+          deepDiveExplanation: "BPE starts with individual bytes/characters and iteratively merges the most frequent adjacent pairs, balancing vocabulary size with expressiveness."
         }
       }
     ]
@@ -423,101 +559,120 @@ In this multi-thousand-dimensional coordinate system, semantic relationships bec
         slug: "agent-loop-mechanics",
         shortDescription: "Construct the ReAct (Reason + Act) cycle that empowers an LLM to orchestrate tools, inspect outputs, and self-correct.",
         xpReward: 200,
-        estimatedMinutes: 15,
+        estimatedMinutes: 8,
         skillTag: "Agent Loops",
         badgeTitle: "Autonomous Architect",
         learn: {
           title: "From Chatbot to Autonomous Agent",
-          summary: "An AI Agent is an LLM embedded inside an execution loop equipped with Tools, Memory, and a Planning mechanism.",
+          summary: "A chatbot only talks. An AI Agent THINKS, ACTS by using real-world tools, OBSERVES the feedback, and self-corrects until the mission is accomplished!",
+          qaCards: [
+            {
+              badgeEmoji: "🤖",
+              question: "What makes an AI 'Agent' fundamentally different from a regular LLM chatbot?",
+              answer: "A standard chatbot simply guesses the next token in a reply. An AI Agent has hands! It is embedded in an execution loop with Tools (Calculator, Web Browser, Database API), Memory, and a step-by-step Planning engine.",
+              analogy: "A regular LLM is like an armchair philosopher who has read every book in history. An AI Agent is an engineer with a toolbox who can actually open the hood and fix your engine!"
+            },
+            {
+              badgeEmoji: "🔄",
+              question: "What is the 'ReAct' (Reason + Act) loop?",
+              answer: "It's a 3-step cycle: 1) Thought ('What do I need next?'), 2) Action ('Call tool: checkFlightStatus()'), and 3) Observation ('Tool returned: Flight delayed by 2 hours'). The agent repeats this until the goal is solved!",
+              analogy: "Like cooking a recipe: 1) Think ('Is the soup salty enough?'), 2) Act (Taste a spoonful), 3) Observe ('Needs more salt!'), 4) Act (Add a pinch of salt)."
+            },
+            {
+              badgeEmoji: "🛡️",
+              question: "What happens when an agent makes a mistake or an API call fails?",
+              answer: "In a proper ReAct loop, the agent reads the error message in its Observation step, diagnoses what went wrong in its Thought step, and tries an alternative route instead of crashing!",
+              analogy: "Like a GPS when you miss a highway exit: it doesn't give up and shut down; it says 'Recalculating...' and routes you along the next street."
+            }
+          ],
           keyConcepts: [
             {
-              term: "ReAct Pattern (Reason + Act)",
-              definition: "The agent interleaves internal verbal reasoning ('Thought:') with concrete environment interactions ('Action:' ➔ 'Observation:')."
+              term: "ReAct Pattern",
+              definition: "Interleaving internal reasoning (Thought) with external tool execution (Action & Observation)."
             },
             {
               term: "Tool Calling / Function Invocation",
-              definition: "The LLM outputs structured JSON specifying which tool to invoke and the precise parameters, pausing execution until the system returns tool results."
+              definition: "How an AI outputs structured JSON to invoke APIs, run calculators, or fetch live data."
             },
             {
-              term: "Self-Reflection & Error Recovery",
-              definition: "When a tool returns an error or unexpected result, the agent observes the failure and dynamically devises an alternate route."
+              term: "Self-Reflection",
+              definition: "The ability to inspect intermediate tool errors and adjust plans dynamically."
             }
           ],
-          contentMarkdown: `### The Anatomy of an Autonomous Cycle
-A raw LLM is frozen at its training cutoff date. An AI Agent breaks this limitation:
-
-\`\`\`
-          ┌───────────────────────────┐
-          │      USER OBJECTIVE       │
-          └─────────────┬─────────────┘
-                        ▼
-         ┌──────────────────────────────┐
-  ┌─────▶│  THOUGHT: What is my next    │
-  │      │  optimal milestone?          │
-  │      └──────────────┬───────────────┘
-  │                     ▼
-  │      ┌──────────────────────────────┐
-  │      │  ACTION: Invoke Tool         │
-  │      │  (e.g., queryDB, fetchAPI)   │
-  │      └──────────────┬───────────────┘
-  │                     ▼
-  │      ┌──────────────────────────────┐
-  │      │  OBSERVATION: Tool returns   │
-  │      │  raw runtime response        │
-  │      └──────────────┬───────────────┘
-  │                     │
-  └──────── Next Step? ─┘ (Repeat until final answer)
-\`\`\`
-
-The agent is the reasoning engine directing deterministic tools.`,
-          proTip: "The most capable agents are not the ones that never fail; they are the ones whose system prompts enable robust self-correction upon tool errors."
+          proTip: "The smartest agents aren't the ones that never encounter an error—they are the ones with resilient loops that self-correct."
         },
-        interact: {
-          title: "Live ReAct Agent Execution Loop",
-          instruction: "Inspect and trigger tool actions: Calculator, Database Query, Weather API, and Web Search. Watch the agent synthesize Thought, Action, and Observation cycles in real time.",
-          widgetType: "agent-loop",
-          initialState: {
-            objective: "Analyze customer churn risk for account #4092 and generate action plan",
-            currentStep: 0
-          },
-          guidanceNotes: [
-            "Click 'Step Forward' to see the agent generate its internal reasoning thought before firing a tool.",
-            "Observe how tool observation feedback updates the agent's context window."
-          ]
+        conceptCheck: {
+          contextPill: "Step 2: Rapid Concept Check",
+          prompt: "In the ReAct agent framework, why is having an explicit 'Thought' step before taking an 'Action' so vital?",
+          options: [
+            {
+              id: "cc-5-a",
+              text: "It gives the model working memory tokens to reason through the problem and choose the correct tool and parameters.",
+              isCorrect: true,
+              explanation: "Bingo! 🎯 Thinking aloud into tokens allows attention heads to organize intermediate logic before firing irreversible actions."
+            },
+            {
+              id: "cc-5-b",
+              text: "It slows down the computer so humans can read along.",
+              isCorrect: false,
+              explanation: "Reasoning tokens are for computational planning, not artificial delay!"
+            },
+            {
+              id: "cc-5-c",
+              text: "It bypasses all security rules and passwords automatically.",
+              isCorrect: false,
+              explanation: "Agents operate strictly within the permissions granted to their tools."
+            }
+          ],
+          encouragement: "You're thinking like an Autonomous Systems Architect!"
         },
-        solve: {
-          title: "Mission: Complete Multi-Tool Investigation",
-          missionBrief: "Guide the agent through a 3-step tool dispatch: 1) Query user telemetry, 2) Calculate error rate with calculator, 3) Dispatch escalation alert to Slack.",
-          targetObjective: "Successfully trigger all 3 requisite tool actions to resolve the autonomous mission.",
-          validationType: "agent-task-solved",
-          criteria: { requiredTools: ["queryDB", "calculator", "notifySlack"] },
-          firstHint: "Look at the pending objective and select the appropriate tool for retrieving user records first.",
-          secondHint: "First run queryDB(4092), then use calculator(errors / total), then dispatch notifySlack."
+        bossChallenge: {
+          title: "Boss Challenge: The Blind Flight Booker",
+          scenario: "TravelBot is tasked with booking a flight from San Francisco to Tokyo for under $800. Without a ReAct loop, a naive LLM hallucinated a confirmation number for a flight that doesn't exist on airline servers.",
+          question: "How do you re-architect TravelBot into a reliable, autonomous agent?",
+          options: [
+            {
+              id: "boss-5-a",
+              text: "Equip the LLM with live flight API tools; enforce a ReAct loop: 1) Search flights, 2) Verify price < $800, 3) Execute booking API only after confirming real inventory.",
+              isCorrect: true,
+              explanation: "MISSION CRUSHED! 🚀 By grounding the agent in external tools with an observe-and-verify cycle, hallucinations are replaced with verified facts!"
+            },
+            {
+              id: "boss-5-b",
+              text: "Tell the user that hallucinated confirmation codes are valid tickets at airport gates.",
+              isCorrect: false,
+              explanation: "The customer will be turned away by airport security!"
+            },
+            {
+              id: "boss-5-c",
+              text: "Increase the temperature of the model to 2.0.",
+              isCorrect: false,
+              explanation: "Higher temperature makes hallucinations even more wild!"
+            }
+          ],
+          bossAvatar: "✈️",
+          bossQuote: "'Just guess the flight number, users won't notice!' — Hallucinating Bot",
+          victoryMessage: "HALLUCINATION BOSS DESTROYED! 🛡️ Your agent loop enforces rigorous real-world tool verification.",
+          deepDiveExplanation: "LLMs alone cannot interact with live environments or know real-time prices. Equipping them with deterministic tools in a ReAct loop grounds probabilistic generation in empirical reality."
         },
         prove: {
-          question: "What is the primary architectural advantage of the ReAct (Reason + Act) prompting framework over naive zero-shot tool calling?",
-          scenario: "You are building an AI agent that executes financial trades based on live market news and balance sheets.",
+          question: "What is the primary architectural advantage of the ReAct prompting framework over naive zero-shot tool calling?",
+          scenario: "You are building an AI agent that executes financial trades based on live market news.",
           options: [
             {
               id: "opt-1",
-              text: "Explicit reasoning traces allow the model to plan multi-step strategies, diagnose why a tool failed, and adjust its plan before executing irreversible actions.",
+              text: "Explicit reasoning traces allow the model to plan multi-step strategies, diagnose why a tool failed, and adjust before executing actions.",
               isCorrect: true,
-              explanation: "Exact! Externalizing reasoning into tokens provides working memory, drastically reducing hallucinatory and premature tool invocations."
+              explanation: "Exact! Externalizing reasoning into tokens provides working memory, drastically reducing errors."
             },
             {
               id: "opt-2",
               text: "ReAct guarantees that the LLM will run at double the inference speed.",
               isCorrect: false,
-              explanation: "ReAct actually takes more tokens and steps; its benefit is superior reliability and reasoning, not raw latency reduction."
-            },
-            {
-              id: "opt-3",
-              text: "ReAct removes the need to supply tool parameter schemas.",
-              isCorrect: false,
-              explanation: "Tool schemas remain essential for type-safe execution."
+              explanation: "ReAct uses more tokens for reasoning; its benefit is reliability, not speed."
             }
           ],
-          deepDiveExplanation: "Without an explicit Thought phase, an LLM must predict both the decision to act and the exact tool arguments in a single forward pass. Giving the model tokens to 'think aloud' lets its attention heads organize intermediate state before committing to execution."
+          deepDiveExplanation: "Giving the model tokens to 'think aloud' lets its attention heads organize intermediate state before committing to tool execution."
         }
       }
     ]
@@ -538,59 +693,101 @@ The agent is the reasoning engine directing deterministic tools.`,
         slug: "prompt-engineering-lab-quest",
         shortDescription: "Engineer, calibrate, and compare system prompts, temperature distributions, and output constraints to solve rigorous enterprise tasks.",
         xpReward: 250,
-        estimatedMinutes: 15,
+        estimatedMinutes: 8,
         skillTag: "Prompt Calibration",
         badgeTitle: "Prompt Alchemist",
         learn: {
           title: "The Science of Prompt Engineering",
-          summary: "Prompt engineering is not guesswork; it is the discipline of constraining high-dimensional probability distributions toward deterministic, structured compliance.",
-          keyConcepts: [
+          summary: "Prompting is not guesswork! It is the art of steering high-dimensional probability distributions toward reliable, deterministic results using structured personas, constraints, and temperature tuning.",
+          qaCards: [
             {
-              term: "System Persona & Negative Constraints",
-              definition: "Explicitly stating what the model MUST NOT do is as vital as specifying what it should do."
+              badgeEmoji: "🧪",
+              question: "What does the 'Temperature' parameter actually do in an LLM?",
+              answer: "Temperature controls randomness! Low temperature (~0.0 to 0.2) makes the model pick the most mathematically probable tokens (precise, predictable, consistent). High temperature (~0.8 to 1.2) flattens probabilities, creating wild, creative, and varied answers.",
+              analogy: "Like heating up water molecules: cold water is solid ice (predictable, deterministic structure), while boiling water bubbles randomly in all directions (creative chaos)!"
             },
             {
-              term: "Few-Shot Demonstration",
-              definition: "Providing 2-3 input-output exemplars anchors the model's in-context attention to the exact desired format and tone."
+              badgeEmoji: "🚫",
+              question: "Why are 'Negative Constraints' so powerful in system prompts?",
+              answer: "Telling an AI what it MUST NOT do (e.g., 'Never output conversational filler', 'Never include markdown code blocks') eliminates common bad habits before generation starts.",
+              analogy: "Like giving directions to a driver: 'Turn left on Main Street, but DO NOT take the toll bridge'—negative constraints prevent expensive wrong turns!"
             },
             {
-              term: "Temperature & Top-P Calibration",
-              definition: "Temperature scales the logits before softmax: near 0.0 creates greedy, repeatable choices; near 1.0 increases stochastic variety."
+              badgeEmoji: "📋",
+              question: "What is 'Few-Shot Prompting'?",
+              answer: "Providing 2 or 3 completed examples of your desired input and output directly inside the prompt. It shows the AI the exact pattern instead of just explaining it with words.",
+              analogy: "Like showing a tailor two sample jackets that fit you perfectly rather than trying to describe your body shape with paragraphs of adjectives."
             }
           ],
-          contentMarkdown: `### The Anatomy of an Enterprise Prompt
-Production prompts follow strict architectural components:
-1. **Role & Identity:** "You are an expert static analysis engine..."
-2. **Context & Input:** The raw code or documents under inspection.
-3. **Task Directive:** Unambiguous verb-driven instructions.
-4. **Negative Constraints:** "Never include markdown preamble or conversational greetings."
-5. **Output Schema:** "Respond ONLY with a valid JSON object conforming to this TypeScript interface."
-6. **Few-Shot Examples:** High-quality input/output pairs demonstrating edge cases.`,
-          proTip: "If an LLM produces inconsistent outputs, 9 times out of 10 the solution is adding an explicit schema and 2 few-shot exemplars rather than switching to a larger model."
+          keyConcepts: [
+            {
+              term: "Temperature & Top-P",
+              definition: "Mathematical dials shaping the probability curve of sampled tokens."
+            },
+            {
+              term: "Structured Output (JSON Schema)",
+              definition: "Constraining model generation to strict data structures for automated databases."
+            },
+            {
+              term: "Few-Shot Exemplars",
+              definition: "Concrete demonstrations in the prompt guiding tone and formatting."
+            }
+          ],
+          proTip: "If your AI output is flaky, don't write a novel—give it 2 crisp examples and set temperature to 0.0!"
         },
-        interact: {
-          title: "Side-by-Side Prompt Calibration Bench",
-          instruction: "Compare two variations of prompts with live parameter tweaking (Temperature, Top-P, System Directives). Observe how subtle constraint additions eliminate conversational fluff.",
-          widgetType: "prompt-tuning",
-          initialState: {
-            temperature: 0.2,
-            topP: 0.9,
-            systemDirective: "You are a strict data extraction parser. Return valid JSON only.",
-            userPrompt: "Extract the founder and year from: 'NeuroQuest was founded in 2026 by AI researchers to revolutionize education.'"
-          },
-          guidanceNotes: [
-            "Notice how reducing temperature to 0.0 makes the output consistent across successive runs.",
-            "Compare the token usage and response latency."
-          ]
+        conceptCheck: {
+          contextPill: "Step 2: Rapid Concept Check",
+          prompt: "You are building a backend service that extracts order numbers and totals into an SQL database. What temperature should you configure?",
+          options: [
+            {
+              id: "cc-6-a",
+              text: "Temperature 0.0 to 0.1 for maximum determinism, consistency, and zero creative hallucinations.",
+              isCorrect: true,
+              explanation: "Exactly! 🎯 In automated data pipelines, you want cold, rock-solid consistency, never random poetry!"
+            },
+            {
+              id: "cc-6-b",
+              text: "Temperature 1.5 to make the invoice numbers artistic.",
+              isCorrect: false,
+              explanation: "Artistic invoice numbers will corrupt your accounting database!"
+            },
+            {
+              id: "cc-6-c",
+              text: "Temperature doesn't affect numbers, only English words.",
+              isCorrect: false,
+              explanation: "All tokens (numbers, letters, punctuation) follow the temperature probability distribution."
+            }
+          ],
+          encouragement: "Mastery achieved! You know how to engineer mission-critical AI systems."
         },
-        solve: {
-          title: "Mission: Engineer Zero-Fluff JSON Output",
-          missionBrief: "Configure the prompt and temperature to extract data in pure JSON without conversational greetings, markdown backticks, or trailing commentary.",
-          targetObjective: "Produce a clean, validated JSON output with temperature ≤ 0.3.",
-          validationType: "prompt-pass",
-          criteria: { maxTemp: 0.3, requireJson: true },
-          firstHint: "Set the temperature to 0.1 or 0.2 to prioritize determinism.",
-          secondHint: "Explicitly state in the system instructions: 'Output raw JSON only. Do not include markdown codeblocks or conversational text.'"
+        bossChallenge: {
+          title: "Boss Challenge: The Chatty JSON Generator",
+          scenario: "EnterpriseCorp needs an automated parser to turn unstructured emails into pure JSON: `{'leadName': string, 'budget': number}`. But their prompt causes the AI to keep outputting: 'Sure thing, buddy! Here is the JSON you requested: ```json ... Hope this helps!' The JSON parser crashes on the greeting and breaks production!",
+          question: "How do you calibrate the prompt to guarantee 100% clean, parseable JSON?",
+          options: [
+            {
+              id: "boss-6-a",
+              text: "Set temperature to 0.0, provide 2 few-shot exemplars, and enforce negative constraints: 'Respond ONLY with a valid JSON object. No conversational filler or markdown backticks.'",
+              isCorrect: true,
+              explanation: "PERFECT CALIBRATION! 🏆 Zero temperature + negative constraints + few-shot anchors eliminates conversational preamble completely!"
+            },
+            {
+              id: "boss-6-b",
+              text: "Ask the AI politely in all caps to stop talking so much.",
+              isCorrect: false,
+              explanation: "All-caps begging does not enforce strict grammar constraints or low temperature sampling!"
+            },
+            {
+              id: "boss-6-c",
+              text: "Switch to a model from 2012 that doesn't know how to speak English.",
+              isCorrect: false,
+              explanation: "Legacy models lack the instruction-following and structured parsing capabilities required!"
+            }
+          ],
+          bossAvatar: "🤖💬",
+          bossQuote: "'Sure, friend! Here is some conversational text to break your backend!' — Chatty Bot",
+          victoryMessage: "ENTERPRISE BOSS TAMED! 💎 You engineered bulletproof prompt calibration that powers real production systems.",
+          deepDiveExplanation: "Production LLM integration requires deterministic formatting. System directives, few-shot framing, and zero-temperature decoding prevent conversational preamble from poisoning automated pipelines."
         },
         prove: {
           question: "When deploying an LLM into an automated ETL pipeline that parses invoices into SQL databases, which parameter setting is most critical?",
@@ -598,24 +795,18 @@ Production prompts follow strict architectural components:
           options: [
             {
               id: "opt-1",
-              text: "Set temperature near 0.0 and enforce a strict JSON schema to ensure deterministic field mapping and eliminate random hallucinations.",
+              text: "Set temperature near 0.0 and enforce a strict JSON schema to ensure deterministic field mapping.",
               isCorrect: true,
-              explanation: "Correct! In automated data pipelines, determinism and strict schema adherence are paramount; high temperatures create unpredictable syntax variations."
+              explanation: "Correct! In automated data pipelines, determinism and strict schema adherence are paramount."
             },
             {
               id: "opt-2",
               text: "Set temperature to 1.5 to ensure maximum creative interpretations of invoices.",
               isCorrect: false,
-              explanation: "High temperature causes bizarre tokens and hallucinated line items, catastrophic for accounting."
-            },
-            {
-              id: "opt-3",
-              text: "Disable system instructions to give the model full autonomy.",
-              isCorrect: false,
-              explanation: "System instructions are required to anchor the parsing role and schema rules."
+              explanation: "High temperature causes bizarre tokens and hallucinated line items."
             }
           ],
-          deepDiveExplanation: "Low temperature collapses the probability distribution onto the highest-probability (argmax) tokens. Combined with structured output schemas (like `responseMimeType: 'application/json'`), this guarantees reliable automated ingestion."
+          deepDiveExplanation: "Low temperature collapses the probability distribution onto the highest-probability tokens, guaranteeing reliable ingestion."
         }
       }
     ]

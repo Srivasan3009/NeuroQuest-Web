@@ -44,9 +44,11 @@ export const Achievements: React.FC<AchievementsProps> = ({
   onSetStreakDays,
   onCompleteFoundationQuest,
   onResetProgress,
-  theme = "riso-pop"
+  theme = "neumorphic"
 }) => {
+  const isNeumorphic = theme === "neumorphic";
   const isDark = theme === "obsidian-gold" || theme === "obsidian-noir";
+  const isRiso = !isDark && !isNeumorphic;
 
   // Filter and Category States
   const [filterStatus, setFilterStatus] = useState<"all" | "earned" | "in-progress">("all");
@@ -295,32 +297,36 @@ export const Achievements: React.FC<AchievementsProps> = ({
 
       {/* Main Overall Progress Showcase Card */}
       <div
-        className={`p-5 rounded-3xl border-2 space-y-4 transition-all ${
-          isDark
-            ? "bg-[#27272A] border-[#3F3F46] text-zinc-100 shadow-xl"
-            : "bg-[#FFFDF9] border-[#1E1B18] text-[#1E1B18] shadow-[4px_4px_0px_#1E1B18]"
+        className={`p-5 rounded-3xl space-y-4 transition-all ${
+          isNeumorphic
+            ? "neu-raised text-slate-800"
+            : isDark
+            ? "bg-[#27272A] border-2 border-[#3F3F46] text-zinc-100 shadow-xl"
+            : "bg-[#FFFDF9] border-2 border-[#1E1B18] text-[#1E1B18] shadow-[4px_4px_0px_#1E1B18]"
         }`}
       >
         <div className="flex items-start justify-between gap-4">
           <div className="space-y-1">
             <div
               className={`text-[10px] font-mono font-black uppercase tracking-widest ${
-                isDark ? "text-amber-400" : "text-[#4F46E5]"
+                isNeumorphic ? "text-[#4F46E5]" : isDark ? "text-amber-400" : "text-[#4F46E5]"
               }`}
             >
               MASTER MILESTONES
             </div>
             <h1 className="text-2xl font-black uppercase tracking-tight">EARNED BADGES</h1>
-            <p className={`text-xs ${isDark ? "text-zinc-400" : "text-zinc-600"}`}>
+            <p className={`text-xs ${isNeumorphic ? "text-slate-500" : isDark ? "text-zinc-400" : "text-zinc-600"}`}>
               Unlock permanent credentials by conquering daily streaks and stage curricula.
             </p>
           </div>
 
           <div
-            className={`w-16 h-16 rounded-2xl border-2 flex flex-col items-center justify-center shrink-0 ${
-              isDark
-                ? "bg-amber-500/10 border-amber-400/80 text-amber-400 shadow-lg"
-                : "bg-[#FEF08A] border-[#1E1B18] text-[#1E1B18] shadow-[2px_2px_0px_#1E1B18]"
+            className={`w-16 h-16 rounded-2xl flex flex-col items-center justify-center shrink-0 ${
+              isNeumorphic
+                ? "neu-flat text-indigo-600"
+                : isDark
+                ? "bg-amber-500/10 border-2 border-amber-400/80 text-amber-400 shadow-lg"
+                : "bg-[#FEF08A] border-2 border-[#1E1B18] text-[#1E1B18] shadow-[2px_2px_0px_#1E1B18]"
             }`}
           >
             <Trophy className="w-7 h-7" />
@@ -330,20 +336,20 @@ export const Achievements: React.FC<AchievementsProps> = ({
 
         {/* Big Striped Progress Bar */}
         <div className="space-y-1.5">
-          <div className="flex items-center justify-between text-xs font-mono font-bold">
+          <div className={`flex items-center justify-between text-xs font-mono font-bold ${isNeumorphic ? "text-slate-600" : ""}`}>
             <span>
               {summary.earned} of {summary.total} Unlocked
             </span>
-            <span>{summary.percent}% Completed</span>
+            <span className={isNeumorphic ? "text-indigo-600 font-black" : ""}>{summary.percent}% Completed</span>
           </div>
           <div
-            className={`w-full h-3.5 rounded-full border-2 overflow-hidden ${
-              isDark ? "bg-[#18181B] border-[#3F3F46]" : "bg-zinc-100 border-[#1E1B18]"
+            className={`w-full h-3.5 rounded-full overflow-hidden ${
+              isNeumorphic ? "neu-progress-track" : isDark ? "bg-[#18181B] border-2 border-[#3F3F46]" : "bg-zinc-100 border-2 border-[#1E1B18]"
             }`}
           >
             <div
-              className={`h-full transition-all duration-500 ${
-                isDark ? "bg-amber-400" : "bg-[#4F46E5]"
+              className={`h-full transition-all duration-500 rounded-full ${
+                isNeumorphic ? "neu-progress-fill" : isDark ? "bg-amber-400" : "bg-[#4F46E5]"
               }`}
               style={{ width: `${summary.percent}%` }}
             />
@@ -354,29 +360,33 @@ export const Achievements: React.FC<AchievementsProps> = ({
         <div className="grid grid-cols-2 gap-2.5 pt-1">
           {/* 7-Day Streak Status Card */}
           <div
-            className={`p-3 rounded-2xl border flex items-center gap-3 ${
-              user.streakDays >= 7
+            className={`p-3 rounded-2xl flex items-center gap-3 transition-all ${
+              isNeumorphic
+                ? "neu-flat text-slate-800"
+                : user.streakDays >= 7
                 ? isDark
-                  ? "bg-emerald-950/40 border-emerald-500/40 text-emerald-200"
-                  : "bg-emerald-50 border-emerald-300 text-emerald-950"
+                  ? "bg-emerald-950/40 border border-emerald-500/40 text-emerald-200"
+                  : "bg-emerald-50 border-2 border-emerald-300 text-emerald-950"
                 : isDark
-                ? "bg-[#18181B] border-zinc-700 text-zinc-300"
-                : "bg-zinc-50 border-zinc-200 text-zinc-800"
+                ? "bg-[#18181B] border border-zinc-700 text-zinc-300"
+                : "bg-zinc-50 border border-zinc-200 text-zinc-800"
             }`}
           >
             <div
-              className={`w-9 h-9 rounded-xl flex items-center justify-center border shrink-0 ${
-                user.streakDays >= 7
-                  ? "bg-amber-500 text-zinc-950 border-amber-600"
+              className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${
+                isNeumorphic
+                  ? "neu-inset text-amber-500"
+                  : user.streakDays >= 7
+                  ? "bg-amber-500 text-zinc-950 border border-amber-600"
                   : isDark
-                  ? "bg-zinc-800 text-zinc-400 border-zinc-700"
-                  : "bg-white text-zinc-500 border-zinc-300"
+                  ? "bg-zinc-800 text-zinc-400 border border-zinc-700"
+                  : "bg-white text-zinc-500 border border-zinc-300"
               }`}
             >
-              <Flame className="w-5 h-5" />
+              <Flame className="w-5 h-5 fill-current" />
             </div>
             <div className="min-w-0">
-              <div className="text-[10px] font-mono font-bold uppercase truncate">
+              <div className={`text-[10px] font-mono font-bold uppercase truncate ${isNeumorphic ? "text-slate-500" : ""}`}>
                 7-Day Streak
               </div>
               <div className="text-xs font-black">
@@ -387,29 +397,33 @@ export const Achievements: React.FC<AchievementsProps> = ({
 
           {/* Foundation Quests Status Card */}
           <div
-            className={`p-3 rounded-2xl border flex items-center gap-3 ${
-              user.completedQuestIds?.includes("quest-1")
+            className={`p-3 rounded-2xl flex items-center gap-3 transition-all ${
+              isNeumorphic
+                ? "neu-flat text-slate-800"
+                : user.completedQuestIds?.includes("quest-1")
                 ? isDark
-                  ? "bg-emerald-950/40 border-emerald-500/40 text-emerald-200"
-                  : "bg-emerald-50 border-emerald-300 text-emerald-950"
+                  ? "bg-emerald-950/40 border border-emerald-500/40 text-emerald-200"
+                  : "bg-emerald-50 border-2 border-emerald-300 text-emerald-950"
                 : isDark
-                ? "bg-[#18181B] border-zinc-700 text-zinc-300"
-                : "bg-zinc-50 border-zinc-200 text-zinc-800"
+                ? "bg-[#18181B] border border-zinc-700 text-zinc-300"
+                : "bg-zinc-50 border border-zinc-200 text-zinc-800"
             }`}
           >
             <div
-              className={`w-9 h-9 rounded-xl flex items-center justify-center border shrink-0 ${
-                user.completedQuestIds?.includes("quest-1")
-                  ? "bg-indigo-600 text-white border-indigo-700"
+              className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${
+                isNeumorphic
+                  ? "neu-inset text-indigo-600"
+                  : user.completedQuestIds?.includes("quest-1")
+                  ? "bg-indigo-600 text-white border border-indigo-700"
                   : isDark
-                  ? "bg-zinc-800 text-zinc-400 border-zinc-700"
-                  : "bg-white text-zinc-500 border-zinc-300"
+                  ? "bg-zinc-800 text-zinc-400 border border-zinc-700"
+                  : "bg-white text-zinc-500 border border-zinc-300"
               }`}
             >
               <Cpu className="w-5 h-5" />
             </div>
             <div className="min-w-0">
-              <div className="text-[10px] font-mono font-bold uppercase truncate">
+              <div className={`text-[10px] font-mono font-bold uppercase truncate ${isNeumorphic ? "text-slate-500" : ""}`}>
                 Foundations
               </div>
               <div className="text-xs font-black">
@@ -424,18 +438,22 @@ export const Achievements: React.FC<AchievementsProps> = ({
       {summary.nextMilestone && (
         <div
           onClick={() => handleSelectBadge(summary.nextMilestone!)}
-          className={`p-3.5 rounded-2xl border-2 flex items-center justify-between cursor-pointer transition-all active:scale-[0.99] ${
-            isDark
-              ? "bg-[#1C1917] border-amber-500/40 hover:border-amber-400 text-zinc-200"
-              : "bg-[#FFF9EA] border-[#1E1B18] shadow-[2px_2px_0px_#1E1B18] hover:translate-y-0.5"
+          className={`p-3.5 rounded-2xl flex items-center justify-between cursor-pointer transition-all active:scale-[0.99] ${
+            isNeumorphic
+              ? "neu-raised text-slate-800"
+              : isDark
+              ? "bg-[#1C1917] border-2 border-amber-500/40 hover:border-amber-400 text-zinc-200"
+              : "bg-[#FFF9EA] border-2 border-[#1E1B18] shadow-[2px_2px_0px_#1E1B18] hover:translate-y-0.5"
           }`}
         >
           <div className="flex items-center gap-3 min-w-0">
             <div
-              className={`w-10 h-10 rounded-xl flex items-center justify-center border shrink-0 ${
-                isDark
-                  ? "bg-amber-500/20 text-amber-400 border-amber-500/40"
-                  : "bg-[#FEF08A] text-[#1E1B18] border-[#1E1B18]"
+              className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${
+                isNeumorphic
+                  ? "neu-inset text-amber-500"
+                  : isDark
+                  ? "bg-amber-500/20 text-amber-400 border border-amber-500/40"
+                  : "bg-[#FEF08A] text-[#1E1B18] border border-[#1E1B18]"
               }`}
             >
               {renderBadgeIcon(summary.nextMilestone.iconName, "w-5 h-5")}
@@ -482,14 +500,18 @@ export const Achievements: React.FC<AchievementsProps> = ({
                   soundFx.playTap();
                   setFilterStatus(status);
                 }}
-                className={`flex-1 py-2 px-2.5 rounded-xl border-2 font-mono text-xs font-black uppercase tracking-wider transition-all ${
+                className={`flex-1 py-2 px-2.5 rounded-xl font-mono text-xs font-black uppercase tracking-wider transition-all ${
                   isActive
-                    ? isDark
-                      ? "bg-amber-400 border-amber-500 text-zinc-950 shadow-sm"
-                      : "bg-[#1E1B18] border-[#1E1B18] text-white shadow-[2px_2px_0px_#1E1B18]"
+                    ? isNeumorphic
+                      ? "neu-btn-primary text-white"
+                      : isDark
+                      ? "bg-amber-400 border-2 border-amber-500 text-zinc-950 shadow-sm"
+                      : "bg-[#1E1B18] border-2 border-[#1E1B18] text-white shadow-[2px_2px_0px_#1E1B18]"
+                    : isNeumorphic
+                    ? "neu-flat text-slate-600 hover:text-slate-900"
                     : isDark
-                    ? "bg-[#27272A] border-[#3F3F46] text-zinc-400 hover:text-zinc-200"
-                    : "bg-[#FFFDF9] border-[#1E1B18] text-[#1E1B18] shadow-[1px_1px_0px_#1E1B18]"
+                    ? "bg-[#27272A] border-2 border-[#3F3F46] text-zinc-400 hover:text-zinc-200"
+                    : "bg-[#FFFDF9] border-2 border-[#1E1B18] text-[#1E1B18] shadow-[1px_1px_0px_#1E1B18]"
                 }`}
               >
                 {status === "all" ? "ALL" : status === "earned" ? "EARNED" : "LOCKED"} ({count})
@@ -513,14 +535,18 @@ export const Achievements: React.FC<AchievementsProps> = ({
                 soundFx.playTap();
                 setSelectedCategory(cat.id);
               }}
-              className={`px-3 py-1 rounded-full text-[11px] font-mono font-bold whitespace-nowrap border transition-all ${
+              className={`px-3 py-1 rounded-full text-[11px] font-mono font-bold whitespace-nowrap transition-all ${
                 selectedCategory === cat.id
-                  ? isDark
-                    ? "bg-zinc-100 text-zinc-900 border-white"
-                    : "bg-[#1E1B18] text-white border-[#1E1B18]"
+                  ? isNeumorphic
+                    ? "neu-btn-primary text-white"
+                    : isDark
+                    ? "bg-zinc-100 text-zinc-900 border border-white"
+                    : "bg-[#1E1B18] text-white border border-[#1E1B18]"
+                  : isNeumorphic
+                  ? "neu-flat text-slate-600 hover:text-slate-900"
                   : isDark
-                  ? "bg-[#18181B] text-zinc-400 border-zinc-800 hover:border-zinc-700"
-                  : "bg-white text-zinc-600 border-zinc-300 hover:border-[#1E1B18]"
+                  ? "bg-[#18181B] text-zinc-400 border border-zinc-800 hover:border-zinc-700"
+                  : "bg-white text-zinc-600 border border-zinc-300 hover:border-[#1E1B18]"
               }`}
             >
               {cat.label}
@@ -538,14 +564,18 @@ export const Achievements: React.FC<AchievementsProps> = ({
             <div
               key={badge.id}
               onClick={() => handleSelectBadge(badge)}
-              className={`p-4 rounded-2xl border-2 text-left space-y-3 cursor-pointer transition-all active:scale-[0.98] ${
-                isUnlocked
+              className={`p-4 rounded-2xl text-left space-y-3 cursor-pointer transition-all active:scale-[0.98] ${
+                isNeumorphic
+                  ? isUnlocked
+                    ? "neu-raised text-slate-800"
+                    : "neu-flat text-slate-500 opacity-80"
+                  : isUnlocked
                   ? isDark
-                    ? "bg-[#27272A] border-amber-400/70 text-zinc-100 shadow-md hover:border-amber-400"
-                    : "bg-[#FFFDF9] border-[#1E1B18] text-[#1E1B18] shadow-[3px_3px_0px_#1E1B18] hover:translate-y-0.5"
+                    ? "bg-[#27272A] border-2 border-amber-400/70 text-zinc-100 shadow-md hover:border-amber-400"
+                    : "bg-[#FFFDF9] border-2 border-[#1E1B18] text-[#1E1B18] shadow-[3px_3px_0px_#1E1B18] hover:translate-y-0.5"
                   : isDark
-                  ? "bg-[#18181B] border-[#27272A] text-zinc-500 hover:border-zinc-700"
-                  : "bg-zinc-50/80 border-zinc-200 text-zinc-500 hover:border-zinc-400"
+                  ? "bg-[#18181B] border-2 border-[#27272A] text-zinc-500 hover:border-zinc-700"
+                  : "bg-zinc-50/80 border-2 border-zinc-200 text-zinc-500 hover:border-zinc-400"
               }`}
             >
               {/* Header: Rarity & Status */}
@@ -574,14 +604,18 @@ export const Achievements: React.FC<AchievementsProps> = ({
               {/* Icon & Title */}
               <div className="flex items-center gap-3">
                 <div
-                  className={`w-12 h-12 rounded-2xl flex items-center justify-center border-2 shrink-0 ${
-                    isUnlocked
+                  className={`w-12 h-12 rounded-2xl flex items-center justify-center shrink-0 ${
+                    isNeumorphic
+                      ? isUnlocked
+                        ? "neu-flat text-indigo-600"
+                        : "neu-inset text-slate-400"
+                      : isUnlocked
                       ? isDark
-                        ? "bg-amber-500/20 text-amber-400 border-amber-400 shadow-sm"
-                        : "bg-[#FEF08A] text-[#1E1B18] border-[#1E1B18] shadow-[2px_2px_0px_#1E1B18]"
+                        ? "bg-amber-500/20 text-amber-400 border-2 border-amber-400 shadow-sm"
+                        : "bg-[#FEF08A] text-[#1E1B18] border-2 border-[#1E1B18] shadow-[2px_2px_0px_#1E1B18]"
                       : isDark
-                      ? "bg-zinc-800 text-zinc-600 border-zinc-700"
-                      : "bg-zinc-200 text-zinc-400 border-zinc-300"
+                      ? "bg-zinc-800 text-zinc-600 border-2 border-zinc-700"
+                      : "bg-zinc-200 text-zinc-400 border-2 border-zinc-300"
                   }`}
                 >
                   {renderBadgeIcon(badge.iconName, "w-6 h-6")}
@@ -591,9 +625,13 @@ export const Achievements: React.FC<AchievementsProps> = ({
                   <h3
                     className={`text-sm font-black uppercase tracking-tight truncate ${
                       isUnlocked
-                        ? isDark
+                        ? isNeumorphic
+                          ? "text-slate-800"
+                          : isDark
                           ? "text-zinc-100"
                           : "text-[#1E1B18]"
+                        : isNeumorphic
+                        ? "text-slate-500"
                         : isDark
                         ? "text-zinc-400"
                         : "text-zinc-700"
@@ -601,7 +639,7 @@ export const Achievements: React.FC<AchievementsProps> = ({
                   >
                     {badge.title}
                   </h3>
-                  <div className="text-[11px] font-mono opacity-70 truncate">
+                  <div className={`text-[11px] font-mono truncate ${isNeumorphic ? "text-slate-500" : "opacity-70"}`}>
                     {badge.milestoneGoal}
                   </div>
                 </div>
@@ -611,9 +649,13 @@ export const Achievements: React.FC<AchievementsProps> = ({
               <p
                 className={`text-xs line-clamp-2 ${
                   isUnlocked
-                    ? isDark
+                    ? isNeumorphic
+                      ? "text-slate-600"
+                      : isDark
                       ? "text-zinc-300"
                       : "text-zinc-700"
+                    : isNeumorphic
+                    ? "text-slate-400"
                     : isDark
                     ? "text-zinc-500"
                     : "text-zinc-500"
@@ -628,17 +670,23 @@ export const Achievements: React.FC<AchievementsProps> = ({
                   <span>
                     {badge.currentValue} / {badge.targetValue} {badge.unit}
                   </span>
-                  <span className="opacity-80">+{badge.xpBonus} XP</span>
+                  <span className={isNeumorphic ? "text-indigo-600" : "opacity-80"}>+{badge.xpBonus} XP</span>
                 </div>
                 <div
-                  className={`w-full h-2 rounded-full overflow-hidden border ${
-                    isDark ? "bg-zinc-800 border-zinc-700" : "bg-zinc-200 border-zinc-300"
+                  className={`w-full h-2 rounded-full overflow-hidden ${
+                    isNeumorphic
+                      ? "neu-progress-track"
+                      : isDark
+                      ? "bg-zinc-800 border border-zinc-700"
+                      : "bg-zinc-200 border border-zinc-300"
                   }`}
                 >
                   <div
                     className={`h-full transition-all duration-300 ${
                       isUnlocked
-                        ? "bg-emerald-500"
+                        ? isNeumorphic ? "bg-emerald-500" : "bg-emerald-500"
+                        : isNeumorphic
+                        ? "neu-progress-fill"
                         : isDark
                         ? "bg-amber-400/80"
                         : "bg-[#4F46E5]"

@@ -1,5 +1,6 @@
 import { Achievement, SkillMastery, UserProfile, AppTheme, MascotRole } from "../types";
 import { INITIAL_PROFILE, INITIAL_ACHIEVEMENTS, getLevelInfo } from "../data/gamification";
+import { saveUserProfileToFirestore } from "./firebase";
 
 const STORAGE_KEY = "neuroquest_learner_profile_v1";
 
@@ -22,22 +23,11 @@ export interface IDataStore {
 
 class StorageAdapter implements IDataStore {
   private inMemoryProfile: UserProfile | null = null;
-  private isSupabaseEnabled: boolean = false;
 
-  constructor() {
-    this.checkCloudStatus();
-  }
-
-  private checkCloudStatus() {
-    // Check if Supabase credentials exist in environment
-    const metaEnv = typeof import.meta !== "undefined" && (import.meta as any).env;
-    const hasUrl = Boolean(metaEnv?.VITE_SUPABASE_URL);
-    const hasKey = Boolean(metaEnv?.VITE_SUPABASE_ANON_KEY);
-    this.isSupabaseEnabled = hasUrl && hasKey;
-  }
+  constructor() {}
 
   public isCloudSynced(): boolean {
-    return this.isSupabaseEnabled;
+    return true;
   }
 
   public async getUserProfile(): Promise<UserProfile> {
@@ -62,7 +52,7 @@ class StorageAdapter implements IDataStore {
           openedChests: Array.isArray(parsed.openedChests) ? parsed.openedChests : [],
           mascotRole: parsed.mascotRole || "detective",
           isPlus: Boolean(parsed.isPlus),
-          theme: parsed.theme === "cyber-dark" ? "riso-pop" : (parsed.theme || "riso-pop"),
+          theme: parsed.theme === "cyber-dark" ? "neumorphic" : (parsed.theme || "neumorphic"),
           completedQuestIds: rawCompleted,
           inProgressQuestIds: Array.isArray(parsed.inProgressQuestIds) ? parsed.inProgressQuestIds : ["quest-1"],
           skills: Array.isArray(parsed.skills) && parsed.skills.length > 0
@@ -93,7 +83,7 @@ class StorageAdapter implements IDataStore {
     }
 
     this.inMemoryProfile = { ...INITIAL_PROFILE };
-    this.saveUserProfile(this.inMemoryProfile);
+    await this.saveUserProfile(this.inMemoryProfile);
     return this.inMemoryProfile;
   }
 
@@ -105,14 +95,13 @@ class StorageAdapter implements IDataStore {
       console.error("Failed to persist user profile to local storage", e);
     }
 
-    // If Supabase is connected in the future, we dispatch to Supabase table:
-    if (this.isSupabaseEnabled) {
-      try {
-        // Mock hook for Supabase client execution:
-        // await supabase.from('profiles').upsert({ id: profile.id, xp: profile.xp, ... });
-      } catch (err) {
-        console.error("Supabase sync failed:", err);
+    // Persist to Firebase Firestore if profile has an ID
+    try {
+      if (profile.id) {
+        await saveUserProfileToFirestore(profile);
       }
+    } catch (err) {
+      console.warn("Firestore background sync:", err);
     }
   }
 

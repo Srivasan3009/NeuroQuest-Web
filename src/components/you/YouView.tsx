@@ -37,6 +37,7 @@ interface YouViewProps {
   onResetProgress: () => void;
   onSetStreakDays?: (days: number) => void;
   onCompleteQuest?: (questId: string, xp: number, skill: string) => void;
+  onLogOut?: () => void;
   theme?: AppTheme;
 }
 
@@ -49,10 +50,12 @@ export const YouView: React.FC<YouViewProps> = ({
   onResetProgress,
   onSetStreakDays,
   onCompleteQuest,
-  theme = "riso-pop"
+  onLogOut,
+  theme = "neumorphic"
 }) => {
+  const isNeumorphic = theme === "neumorphic";
   const isDark = theme === "obsidian-gold" || theme === "obsidian-noir";
-  const isRiso = !isDark;
+  const isRiso = !isDark && !isNeumorphic;
   const [inSettingsView, setInSettingsView] = useState(false);
   const [inAchievementsView, setInAchievementsView] = useState(false);
 
@@ -180,26 +183,38 @@ export const YouView: React.FC<YouViewProps> = ({
 
         {/* User Card */}
         <div
-          className={`p-4 rounded-2xl flex items-center gap-3 ${
-            isDark
+          className={`p-4 rounded-2xl flex items-center gap-3.5 transition-all ${
+            isNeumorphic
+              ? "neu-raised text-slate-800"
+              : isDark
               ? "bg-[#27272A] border border-[#3F3F46] text-[#F4F4F5]"
               : "bg-[#FFFDF9] border-2 border-[#1E1B18] text-[#1E1B18] shadow-[3px_3px_0px_#1E1B18]"
           }`}
         >
           <div
-            className={`w-12 h-12 rounded-full flex items-center justify-center font-black ${
-              isDark
+            className={`w-12 h-12 rounded-full flex items-center justify-center font-black text-lg ${
+              isNeumorphic
+                ? "neu-inset text-indigo-600"
+                : isDark
                 ? "bg-amber-500/20 border-2 border-amber-400 text-amber-300"
                 : "bg-[#FEF08A] border-2 border-[#1E1B18] text-[#1E1B18]"
             }`}
           >
-            L
+            {user.fullName ? user.fullName.charAt(0).toUpperCase() : "U"}
           </div>
-          <div>
-            <div className="text-sm font-black uppercase">LEARNER</div>
-            <div className={`text-xs font-mono ${isDark ? "text-zinc-400" : "text-zinc-600"}`}>
-              @learner • Bronze League
+          <div className="flex-1 min-w-0">
+            <div className="text-sm font-black uppercase truncate">
+              {user.fullName || "Cadet"}
             </div>
+            <div className={`text-xs font-mono truncate ${isNeumorphic ? "text-slate-500" : isDark ? "text-zinc-400" : "text-zinc-600"}`}>
+              @{user.username || user.email?.split("@")[0] || "cadet"}
+              {user.age ? ` • ${user.age} yrs` : ""} • {user.rank || "Bronze Cadet"}
+            </div>
+            {user.email && (
+              <div className="text-[10px] font-mono text-slate-400 truncate">
+                {user.email}
+              </div>
+            )}
           </div>
         </div>
 
@@ -207,8 +222,10 @@ export const YouView: React.FC<YouViewProps> = ({
         <div className="space-y-2.5">
           {/* 1. Preferences Accordion matching video */}
           <div
-            className={`rounded-2xl overflow-hidden ${
-              isDark
+            className={`rounded-2xl overflow-hidden transition-all ${
+              isNeumorphic
+                ? "neu-flat text-slate-800"
+                : isDark
                 ? "bg-[#27272A] border border-[#3F3F46]"
                 : "bg-[#FFFDF9] border-2 border-[#1E1B18] shadow-[3px_3px_0px_#1E1B18]"
             }`}
@@ -222,18 +239,18 @@ export const YouView: React.FC<YouViewProps> = ({
               <div>
                 <div
                   className={`text-xs font-black uppercase ${
-                    isDark ? "text-zinc-100" : "text-[#1E1B18]"
+                    isNeumorphic ? "text-slate-800" : isDark ? "text-zinc-100" : "text-[#1E1B18]"
                   }`}
                 >
                   PREFERENCES
                 </div>
-                <div className={`text-[11px] ${isDark ? "text-zinc-400" : "text-zinc-600"}`}>
+                <div className={`text-[11px] ${isNeumorphic ? "text-slate-500" : isDark ? "text-zinc-400" : "text-zinc-600"}`}>
                   Sound, theme, and extras
                 </div>
               </div>
               <ChevronDown
                 className={`w-4 h-4 transition-transform ${
-                  isDark ? "text-zinc-400" : "text-[#1E1B18]"
+                  isNeumorphic ? "text-slate-600" : isDark ? "text-zinc-400" : "text-[#1E1B18]"
                 } ${openAccordion === "preferences" ? "rotate-180" : ""}`}
               />
             </button>
@@ -241,32 +258,36 @@ export const YouView: React.FC<YouViewProps> = ({
             {openAccordion === "preferences" && (
               <div
                 className={`p-4 pt-0 space-y-4 border-t text-xs ${
-                  isDark ? "border-[#3F3F46]" : "border-[#1E1B18]/30"
+                  isNeumorphic ? "border-slate-300/80" : isDark ? "border-[#3F3F46]" : "border-[#1E1B18]/30"
                 }`}
               >
                 {/* Sound & Haptics Toggle */}
                 <div className="flex items-center justify-between pt-3">
                   <div className="flex items-center gap-2.5">
-                    <Volume2 className={`w-4 h-4 ${isDark ? "text-zinc-400" : "text-zinc-600"}`} />
+                    <Volume2 className={`w-4 h-4 ${isNeumorphic ? "text-indigo-600" : isDark ? "text-zinc-400" : "text-zinc-600"}`} />
                     <div>
-                      <div className={`font-bold ${isDark ? "text-zinc-200" : "text-[#1E1B18]"}`}>
+                      <div className={`font-bold ${isNeumorphic ? "text-slate-800" : isDark ? "text-zinc-200" : "text-[#1E1B18]"}`}>
                         Sound & haptics
                       </div>
-                      <div className={`text-[11px] ${isDark ? "text-zinc-400" : "text-zinc-500"}`}>
+                      <div className={`text-[11px] ${isNeumorphic ? "text-slate-500" : isDark ? "text-zinc-400" : "text-zinc-500"}`}>
                         Beeps and buzzes in lessons
                       </div>
                     </div>
                   </div>
                   <button
                     onClick={handleToggleSound}
-                    className={`px-3 py-1 rounded-full font-mono font-black text-xs border ${
+                    className={`px-3 py-1 rounded-full font-mono font-black text-xs transition-all ${
                       soundEnabled
-                        ? isDark
-                          ? "bg-amber-400 text-zinc-950 border-amber-500"
-                          : "bg-[#4F46E5] text-white border-[#1E1B18]"
+                        ? isNeumorphic
+                          ? "neu-btn-primary text-white"
+                          : isDark
+                          ? "bg-amber-400 text-zinc-950 border border-amber-500"
+                          : "bg-[#4F46E5] text-white border border-[#1E1B18]"
+                        : isNeumorphic
+                        ? "neu-inset text-slate-500"
                         : isDark
-                        ? "bg-zinc-800 text-zinc-400 border-zinc-700"
-                        : "bg-zinc-200 text-zinc-600 border-zinc-300"
+                        ? "bg-zinc-800 text-zinc-400 border border-zinc-700"
+                        : "bg-zinc-200 text-zinc-600 border border-zinc-300"
                     }`}
                   >
                     {soundEnabled ? "ON" : "OFF"}
@@ -276,26 +297,30 @@ export const YouView: React.FC<YouViewProps> = ({
                 {/* Lesson Voice Toggle */}
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2.5">
-                    <Mic className={`w-4 h-4 ${isDark ? "text-zinc-400" : "text-zinc-600"}`} />
+                    <Mic className={`w-4 h-4 ${isNeumorphic ? "text-indigo-600" : isDark ? "text-zinc-400" : "text-zinc-600"}`} />
                     <div>
-                      <div className={`font-bold ${isDark ? "text-zinc-200" : "text-[#1E1B18]"}`}>
+                      <div className={`font-bold ${isNeumorphic ? "text-slate-800" : isDark ? "text-zinc-200" : "text-[#1E1B18]"}`}>
                         NEUROBOT lesson voice
                       </div>
-                      <div className={`text-[11px] ${isDark ? "text-zinc-400" : "text-zinc-500"}`}>
+                      <div className={`text-[11px] ${isNeumorphic ? "text-slate-500" : isDark ? "text-zinc-400" : "text-zinc-500"}`}>
                         AI audio speech narration
                       </div>
                     </div>
                   </div>
                   <button
                     onClick={() => setVoiceEnabled(!voiceEnabled)}
-                    className={`px-3 py-1 rounded-full font-mono font-black text-xs border ${
+                    className={`px-3 py-1 rounded-full font-mono font-black text-xs transition-all ${
                       voiceEnabled
-                        ? isDark
-                          ? "bg-amber-400 text-zinc-950 border-amber-500"
-                          : "bg-[#4F46E5] text-white border-[#1E1B18]"
+                        ? isNeumorphic
+                          ? "neu-btn-primary text-white"
+                          : isDark
+                          ? "bg-amber-400 text-zinc-950 border border-amber-500"
+                          : "bg-[#4F46E5] text-white border border-[#1E1B18]"
+                        : isNeumorphic
+                        ? "neu-inset text-slate-500"
                         : isDark
-                        ? "bg-zinc-800 text-zinc-400 border-zinc-700"
-                        : "bg-zinc-200 text-zinc-600 border-zinc-300"
+                        ? "bg-zinc-800 text-zinc-400 border border-zinc-700"
+                        : "bg-zinc-200 text-zinc-600 border border-zinc-300"
                     }`}
                   >
                     {voiceEnabled ? "ON" : "OFF"}
@@ -305,36 +330,41 @@ export const YouView: React.FC<YouViewProps> = ({
                 {/* App Appearance / Theme Selector */}
                 <div
                   className={`space-y-2 pt-2 border-t ${
-                    isDark ? "border-[#3F3F46]" : "border-[#1E1B18]/30"
+                    isNeumorphic ? "border-slate-300/80" : isDark ? "border-[#3F3F46]" : "border-[#1E1B18]/30"
                   }`}
                 >
                   <div className="flex items-center gap-2 font-black">
-                    <Palette className={`w-4 h-4 ${isDark ? "text-amber-400" : "text-[#4F46E5]"}`} />
-                    <span className={isDark ? "text-zinc-200" : "text-[#1E1B18]"}>
+                    <Palette className={`w-4 h-4 ${isNeumorphic ? "text-indigo-600" : isDark ? "text-amber-400" : "text-[#4F46E5]"}`} />
+                    <span className={isNeumorphic ? "text-slate-800" : isDark ? "text-zinc-200" : "text-[#1E1B18]"}>
                       App appearance (Theme)
                     </span>
                   </div>
 
                   <div className="grid grid-cols-2 gap-2">
                     {[
+                      { id: "neumorphic" as AppTheme, label: "Neumorphic Soft", sub: "Soft Emboss & Shadows" },
                       { id: "riso-pop" as AppTheme, label: "Warm Editorial", sub: "Ivory Paper & Ink" },
                       { id: "minimal-light" as AppTheme, label: "Minimalist Light", sub: "Clean & Modern" },
                       { id: "obsidian-noir" as AppTheme, label: "Obsidian Noir", sub: "Charcoal & Amber" },
                       { id: "obsidian-gold" as AppTheme, label: "Obsidian Gold", sub: "Deep Jet & Gold" }
                     ].map((th) => {
-                      const isSelected = theme === th.id || (th.id === "riso-pop" && theme === "cyber-dark");
+                      const isSelected = theme === th.id || (th.id === "neumorphic" && !theme);
                       return (
                         <button
                           key={th.id}
                           onClick={() => handleThemeChange(th.id)}
-                          className={`p-2.5 rounded-xl text-left border-2 transition-all ${
-                            isSelected
+                          className={`p-2.5 rounded-xl text-left transition-all ${
+                            isNeumorphic
+                              ? isSelected
+                                ? "neu-inset border border-indigo-400 text-indigo-700 font-black"
+                                : "neu-flat text-slate-700 hover:text-indigo-600"
+                              : isSelected
                               ? isDark
-                                ? "bg-amber-400/20 border-amber-400 text-amber-300"
-                                : "bg-[#EEF2FF] border-[#1E1B18] text-[#1E1B18] shadow-[2px_2px_0px_#1E1B18]"
+                                ? "bg-amber-400/20 border-2 border-amber-400 text-amber-300"
+                                : "bg-[#EEF2FF] border-2 border-[#1E1B18] text-[#1E1B18] shadow-[2px_2px_0px_#1E1B18]"
                               : isDark
-                              ? "bg-[#18181B] border-[#3F3F46] text-zinc-400 hover:border-zinc-500"
-                              : "bg-[#FFFDF9] border-zinc-300 text-zinc-600 hover:border-zinc-500"
+                              ? "bg-[#18181B] border-2 border-[#3F3F46] text-zinc-400 hover:border-zinc-500"
+                              : "bg-[#FFFDF9] border-2 border-zinc-300 text-zinc-600 hover:border-zinc-500"
                           }`}
                         >
                           <div className="font-bold text-xs flex items-center justify-between">
@@ -342,12 +372,12 @@ export const YouView: React.FC<YouViewProps> = ({
                             {isSelected && (
                               <Check
                                 className={`w-3.5 h-3.5 ${
-                                  isDark ? "text-amber-400" : "text-[#4F46E5]"
+                                  isNeumorphic ? "text-indigo-600" : isDark ? "text-amber-400" : "text-[#4F46E5]"
                                 }`}
                               />
                             )}
                           </div>
-                          <div className={`text-[10px] mt-0.5 ${isDark ? "text-zinc-500" : "text-zinc-500"}`}>
+                          <div className={`text-[10px] mt-0.5 ${isNeumorphic ? "text-slate-500" : isDark ? "text-zinc-500" : "text-zinc-500"}`}>
                             {th.sub}
                           </div>
                         </button>
@@ -457,8 +487,14 @@ export const YouView: React.FC<YouViewProps> = ({
                   isDark ? "border-[#3F3F46]" : "border-[#1E1B18]/30"
                 }`}
               >
-                <div className={isDark ? "text-zinc-400" : "text-zinc-600"}>
-                  Data is safely cached locally in your secure workspace storage.
+                <div className="flex items-center gap-2 py-1">
+                  <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                  <span className={`font-mono text-[11px] font-bold ${isDark ? "text-emerald-400" : "text-emerald-700"}`}>
+                    Firebase Firestore & Auth Active
+                  </span>
+                </div>
+                <div className={isDark ? "text-zinc-400 text-[11px]" : "text-zinc-600 text-[11px]"}>
+                  Your learning profile, XP, and streak are backed up and synced to cloud storage in real time.
                 </div>
                 <button
                   onClick={() => {
@@ -488,19 +524,19 @@ export const YouView: React.FC<YouViewProps> = ({
         <div>
           <div
             className={`text-[10px] font-mono uppercase tracking-widest font-bold ${
-              isDark ? "text-zinc-400" : "text-[#4F46E5]"
+              isNeumorphic ? "text-[#4F46E5]" : isDark ? "text-zinc-400" : "text-[#4F46E5]"
             }`}
           >
             YOU
           </div>
           <h1
             className={`text-2xl font-black tracking-tight uppercase ${
-              isDark ? "text-zinc-100" : "text-[#1E1B18]"
+              isNeumorphic ? "text-slate-800" : isDark ? "text-zinc-100" : "text-[#1E1B18]"
             }`}
           >
             YOUR PROFILE
           </h1>
-          <div className={`text-xs font-mono ${isDark ? "text-zinc-400" : "text-zinc-600"}`}>
+          <div className={`text-xs font-mono ${isNeumorphic ? "text-slate-500" : isDark ? "text-zinc-400" : "text-zinc-600"}`}>
             Level {user.level || 1}
           </div>
         </div>
@@ -512,10 +548,12 @@ export const YouView: React.FC<YouViewProps> = ({
             soundFx.playTap();
             setInSettingsView(true);
           }}
-          className={`p-2.5 rounded-2xl border-2 transition-transform active:scale-95 ${
-            isDark
-              ? "bg-[#27272A] border-[#3F3F46] text-zinc-300 hover:text-amber-400"
-              : "bg-[#FFFDF9] border-[#1E1B18] text-[#1E1B18] shadow-[2px_2px_0px_#1E1B18]"
+          className={`p-2.5 rounded-2xl transition-transform active:scale-95 ${
+            isNeumorphic
+              ? "neu-btn text-slate-700 hover:text-indigo-600"
+              : isDark
+              ? "bg-[#27272A] border-2 border-[#3F3F46] text-zinc-300 hover:text-amber-400"
+              : "bg-[#FFFDF9] border-2 border-[#1E1B18] text-[#1E1B18] shadow-[2px_2px_0px_#1E1B18]"
           }`}
         >
           <Settings className="w-5 h-5" />
@@ -525,35 +563,60 @@ export const YouView: React.FC<YouViewProps> = ({
       {/* 2. Big Profile Card matching video */}
       <div
         className={`p-6 rounded-3xl text-center space-y-3 transition-all ${
-          isDark
+          isNeumorphic
+            ? "neu-raised text-slate-800"
+            : isDark
             ? "bg-[#27272A] border border-[#3F3F46] shadow-xl text-zinc-100"
             : "bg-[#FFFDF9] border-2 border-[#1E1B18] text-[#1E1B18] shadow-[4px_4px_0px_#1E1B18]"
         }`}
       >
         <div className="relative inline-block">
           <div
-            className={`w-20 h-20 mx-auto rounded-full border-4 flex items-center justify-center text-3xl font-black ${
-              isDark
-                ? "bg-amber-500/10 border-amber-400/80 text-amber-400"
-                : "bg-[#FEF08A] border-[#1E1B18] text-[#1E1B18] shadow-[2px_2px_0px_#1E1B18]"
+            className={`w-20 h-20 mx-auto rounded-full flex items-center justify-center text-3xl font-black ${
+              isNeumorphic
+                ? "neu-inset text-indigo-600 font-black"
+                : isDark
+                ? "bg-amber-500/10 border-4 border-amber-400/80 text-amber-400"
+                : "bg-[#FEF08A] border-4 border-[#1E1B18] text-[#1E1B18] shadow-[2px_2px_0px_#1E1B18]"
             }`}
           >
-            L
+            {user.fullName ? user.fullName.charAt(0).toUpperCase() : "U"}
           </div>
           <span
-            className={`absolute -bottom-1 left-1/2 -translate-x-1/2 text-[9px] font-mono font-black border px-2 py-0.5 rounded-full uppercase ${
-              isDark
-                ? "bg-amber-950 text-amber-300 border-amber-500/40"
-                : "bg-[#FFFDF9] text-[#1E1B18] border-[#1E1B18]"
+            className={`absolute -bottom-1 left-1/2 -translate-x-1/2 text-[9px] font-mono font-black px-2 py-0.5 rounded-full uppercase ${
+              isNeumorphic
+                ? "neu-pill-accent text-amber-600"
+                : isDark
+                ? "bg-amber-950 text-amber-300 border border-amber-500/40"
+                : "bg-[#FFFDF9] text-[#1E1B18] border border-[#1E1B18]"
             }`}
           >
-            BRONZE
+            {user.rank || "BRONZE CADET"}
           </span>
         </div>
 
-        <div>
-          <h2 className="text-xl font-black uppercase tracking-tight">LEARNER</h2>
-          <p className={`text-xs font-mono ${isDark ? "text-zinc-400" : "text-zinc-600"}`}>@learner</p>
+        <div className="space-y-1">
+          <h2 className="text-xl font-black uppercase tracking-tight">
+            {user.fullName || "CADET"}
+          </h2>
+          <div className="flex items-center justify-center gap-2 flex-wrap text-xs font-mono">
+            <span className={isNeumorphic ? "text-indigo-600 font-bold" : isDark ? "text-amber-400 font-bold" : "text-[#4F46E5] font-bold"}>
+              @{user.username || user.email?.split("@")[0] || "cadet"}
+            </span>
+            {user.age && (
+              <>
+                <span className="text-slate-400">•</span>
+                <span className={isNeumorphic ? "text-slate-500" : isDark ? "text-zinc-400" : "text-zinc-600"}>
+                  {user.age} yrs old
+                </span>
+              </>
+            )}
+          </div>
+          {user.email && (
+            <p className="text-[11px] font-mono text-slate-400">
+              {user.email}
+            </p>
+          )}
         </div>
       </div>
 
@@ -566,18 +629,22 @@ export const YouView: React.FC<YouViewProps> = ({
             soundFx.playTap();
             setInAchievementsView(true);
           }}
-          className={`w-full p-4 rounded-2xl border-2 flex items-center justify-between text-left transition-all ${
-            isDark
-              ? "bg-[#27272A] border-[#3F3F46] hover:border-amber-400 text-zinc-100"
-              : "bg-[#FFFDF9] border-[#1E1B18] text-[#1E1B18] shadow-[2px_2px_0px_#1E1B18] hover:translate-y-0.5"
+          className={`w-full p-4 rounded-2xl flex items-center justify-between text-left transition-all ${
+            isNeumorphic
+              ? "neu-flat text-slate-800 hover:scale-[1.01]"
+              : isDark
+              ? "bg-[#27272A] border-2 border-[#3F3F46] hover:border-amber-400 text-zinc-100"
+              : "bg-[#FFFDF9] border-2 border-[#1E1B18] text-[#1E1B18] shadow-[2px_2px_0px_#1E1B18] hover:translate-y-0.5"
           }`}
         >
           <div className="flex items-center gap-3.5">
             <div
-              className={`w-10 h-10 rounded-xl flex items-center justify-center border ${
-                isDark
-                  ? "bg-amber-500/10 text-amber-400 border-amber-500/20"
-                  : "bg-[#FEF08A] text-[#1E1B18] border-[#1E1B18]"
+              className={`w-10 h-10 rounded-xl flex items-center justify-center ${
+                isNeumorphic
+                  ? "neu-inset text-amber-500"
+                  : isDark
+                  ? "bg-amber-500/10 text-amber-400 border border-amber-500/20"
+                  : "bg-[#FEF08A] text-[#1E1B18] border border-[#1E1B18]"
               }`}
             >
               <Trophy className="w-5 h-5" />
@@ -586,16 +653,18 @@ export const YouView: React.FC<YouViewProps> = ({
               <div className="text-xs font-black uppercase flex items-center gap-2">
                 <span>ACHIEVEMENTS</span>
                 <span
-                  className={`text-[9px] font-mono px-2 py-0.5 rounded-full border ${
-                    isDark
-                      ? "bg-amber-500/20 text-amber-300 border-amber-500/40"
-                      : "bg-[#EEF2FF] text-[#4F46E5] border-[#1E1B18]"
+                  className={`text-[9px] font-mono px-2 py-0.5 rounded-full ${
+                    isNeumorphic
+                      ? "neu-pill-accent text-indigo-600"
+                      : isDark
+                      ? "bg-amber-500/20 text-amber-300 border border-amber-500/40"
+                      : "bg-[#EEF2FF] text-[#4F46E5] border border-[#1E1B18]"
                   }`}
                 >
                   {achievementsSummary.earned}/{achievementsSummary.total} UNLOCKED
                 </span>
               </div>
-              <div className={`text-[11px] ${isDark ? "text-zinc-400" : "text-zinc-600"}`}>
+              <div className={`text-[11px] ${isNeumorphic ? "text-slate-500" : isDark ? "text-zinc-400" : "text-zinc-600"}`}>
                 Earned badges for streaks, foundations & milestones
               </div>
             </div>
@@ -606,23 +675,29 @@ export const YouView: React.FC<YouViewProps> = ({
         {/* Friends */}
         <button
           onClick={() => setActiveSubModal("friends")}
-          className={`w-full p-4 rounded-2xl border-2 flex items-center justify-between text-left transition-all ${
-            isDark
-              ? "bg-[#27272A] border-[#3F3F46] hover:border-zinc-500 text-zinc-100"
-              : "bg-[#FFFDF9] border-[#1E1B18] text-[#1E1B18] shadow-[2px_2px_0px_#1E1B18] hover:translate-y-0.5"
+          className={`w-full p-4 rounded-2xl flex items-center justify-between text-left transition-all ${
+            isNeumorphic
+              ? "neu-flat text-slate-800 hover:scale-[1.01]"
+              : isDark
+              ? "bg-[#27272A] border-2 border-[#3F3F46] hover:border-zinc-500 text-zinc-100"
+              : "bg-[#FFFDF9] border-2 border-[#1E1B18] text-[#1E1B18] shadow-[2px_2px_0px_#1E1B18] hover:translate-y-0.5"
           }`}
         >
           <div className="flex items-center gap-3.5">
             <div
-              className={`w-10 h-10 rounded-xl flex items-center justify-center border ${
-                isDark ? "bg-amber-500/10 text-amber-400 border-amber-500/20" : "bg-[#EEF2FF] text-[#4F46E5] border-[#1E1B18]"
+              className={`w-10 h-10 rounded-xl flex items-center justify-center ${
+                isNeumorphic
+                  ? "neu-inset text-indigo-600"
+                  : isDark
+                  ? "bg-amber-500/10 text-amber-400 border border-amber-500/20"
+                  : "bg-[#EEF2FF] text-[#4F46E5] border border-[#1E1B18]"
               }`}
             >
               <Users className="w-5 h-5" />
             </div>
             <div>
               <div className="text-xs font-black uppercase">FRIENDS</div>
-              <div className={`text-[11px] ${isDark ? "text-zinc-400" : "text-zinc-600"}`}>
+              <div className={`text-[11px] ${isNeumorphic ? "text-slate-500" : isDark ? "text-zinc-400" : "text-zinc-600"}`}>
                 Add @handle • challenge • invite
               </div>
             </div>
@@ -633,23 +708,29 @@ export const YouView: React.FC<YouViewProps> = ({
         {/* Portfolio */}
         <button
           onClick={() => setActiveSubModal("portfolio")}
-          className={`w-full p-4 rounded-2xl border-2 flex items-center justify-between text-left transition-all ${
-            isDark
-              ? "bg-[#27272A] border-[#3F3F46] hover:border-zinc-500 text-zinc-100"
-              : "bg-[#FFFDF9] border-[#1E1B18] text-[#1E1B18] shadow-[2px_2px_0px_#1E1B18] hover:translate-y-0.5"
+          className={`w-full p-4 rounded-2xl flex items-center justify-between text-left transition-all ${
+            isNeumorphic
+              ? "neu-flat text-slate-800 hover:scale-[1.01]"
+              : isDark
+              ? "bg-[#27272A] border-2 border-[#3F3F46] hover:border-zinc-500 text-zinc-100"
+              : "bg-[#FFFDF9] border-2 border-[#1E1B18] text-[#1E1B18] shadow-[2px_2px_0px_#1E1B18] hover:translate-y-0.5"
           }`}
         >
           <div className="flex items-center gap-3.5">
             <div
-              className={`w-10 h-10 rounded-xl flex items-center justify-center border ${
-                isDark ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/20" : "bg-[#ECFDF5] text-emerald-700 border-[#1E1B18]"
+              className={`w-10 h-10 rounded-xl flex items-center justify-center ${
+                isNeumorphic
+                  ? "neu-inset text-emerald-600"
+                  : isDark
+                  ? "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20"
+                  : "bg-[#ECFDF5] text-emerald-700 border border-[#1E1B18]"
               }`}
             >
               <FolderArchive className="w-5 h-5" />
             </div>
             <div>
               <div className="text-xs font-black uppercase">PORTFOLIO</div>
-              <div className={`text-[11px] ${isDark ? "text-zinc-400" : "text-zinc-600"}`}>
+              <div className={`text-[11px] ${isNeumorphic ? "text-slate-500" : isDark ? "text-zinc-400" : "text-zinc-600"}`}>
                 Prompts, checklists & projects you saved
               </div>
             </div>
@@ -660,23 +741,29 @@ export const YouView: React.FC<YouViewProps> = ({
         {/* Bookmarks */}
         <button
           onClick={() => setActiveSubModal("bookmarks")}
-          className={`w-full p-4 rounded-2xl border-2 flex items-center justify-between text-left transition-all ${
-            isDark
-              ? "bg-[#27272A] border-[#3F3F46] hover:border-zinc-500 text-zinc-100"
-              : "bg-[#FFFDF9] border-[#1E1B18] text-[#1E1B18] shadow-[2px_2px_0px_#1E1B18] hover:translate-y-0.5"
+          className={`w-full p-4 rounded-2xl flex items-center justify-between text-left transition-all ${
+            isNeumorphic
+              ? "neu-flat text-slate-800 hover:scale-[1.01]"
+              : isDark
+              ? "bg-[#27272A] border-2 border-[#3F3F46] hover:border-zinc-500 text-zinc-100"
+              : "bg-[#FFFDF9] border-2 border-[#1E1B18] text-[#1E1B18] shadow-[2px_2px_0px_#1E1B18] hover:translate-y-0.5"
           }`}
         >
           <div className="flex items-center gap-3.5">
             <div
-              className={`w-10 h-10 rounded-xl flex items-center justify-center border ${
-                isDark ? "bg-sky-500/10 text-sky-400 border-sky-500/20" : "bg-[#FEF08A] text-[#1E1B18] border-[#1E1B18]"
+              className={`w-10 h-10 rounded-xl flex items-center justify-center ${
+                isNeumorphic
+                  ? "neu-inset text-amber-500"
+                  : isDark
+                  ? "bg-sky-500/10 text-sky-400 border border-sky-500/20"
+                  : "bg-[#FEF08A] text-[#1E1B18] border border-[#1E1B18]"
               }`}
             >
               <Bookmark className="w-5 h-5" />
             </div>
             <div>
               <div className="text-xs font-black uppercase">BOOKMARKS</div>
-              <div className={`text-[11px] ${isDark ? "text-zinc-400" : "text-zinc-600"}`}>
+              <div className={`text-[11px] ${isNeumorphic ? "text-slate-500" : isDark ? "text-zinc-400" : "text-zinc-600"}`}>
                 Saved lessons and interactive tools
               </div>
             </div>
@@ -687,23 +774,29 @@ export const YouView: React.FC<YouViewProps> = ({
         {/* Certificates */}
         <button
           onClick={() => setActiveSubModal("certificates")}
-          className={`w-full p-4 rounded-2xl border-2 flex items-center justify-between text-left transition-all ${
-            isDark
-              ? "bg-[#27272A] border-[#3F3F46] hover:border-zinc-500 text-zinc-100"
-              : "bg-[#FFFDF9] border-[#1E1B18] text-[#1E1B18] shadow-[2px_2px_0px_#1E1B18] hover:translate-y-0.5"
+          className={`w-full p-4 rounded-2xl flex items-center justify-between text-left transition-all ${
+            isNeumorphic
+              ? "neu-flat text-slate-800 hover:scale-[1.01]"
+              : isDark
+              ? "bg-[#27272A] border-2 border-[#3F3F46] hover:border-zinc-500 text-zinc-100"
+              : "bg-[#FFFDF9] border-2 border-[#1E1B18] text-[#1E1B18] shadow-[2px_2px_0px_#1E1B18] hover:translate-y-0.5"
           }`}
         >
           <div className="flex items-center gap-3.5">
             <div
-              className={`w-10 h-10 rounded-xl flex items-center justify-center border ${
-                isDark ? "bg-amber-500/10 text-amber-400 border-amber-500/20" : "bg-[#FFEDD5] text-[#EA580C] border-[#1E1B18]"
+              className={`w-10 h-10 rounded-xl flex items-center justify-center ${
+                isNeumorphic
+                  ? "neu-inset text-orange-500"
+                  : isDark
+                  ? "bg-amber-500/10 text-amber-400 border border-amber-500/20"
+                  : "bg-[#FFEDD5] text-[#EA580C] border border-[#1E1B18]"
               }`}
             >
               <Award className="w-5 h-5" />
             </div>
             <div>
               <div className="text-xs font-black uppercase">CERTIFICATES</div>
-              <div className={`text-[11px] ${isDark ? "text-zinc-400" : "text-zinc-600"}`}>
+              <div className={`text-[11px] ${isNeumorphic ? "text-slate-500" : isDark ? "text-zinc-400" : "text-zinc-600"}`}>
                 Earned track & video credentials
               </div>
             </div>
@@ -714,23 +807,29 @@ export const YouView: React.FC<YouViewProps> = ({
         {/* Settings row */}
         <button
           onClick={() => setInSettingsView(true)}
-          className={`w-full p-4 rounded-2xl border-2 flex items-center justify-between text-left transition-all ${
-            isDark
-              ? "bg-[#27272A] border-[#3F3F46] hover:border-zinc-500 text-zinc-100"
-              : "bg-[#FFFDF9] border-[#1E1B18] text-[#1E1B18] shadow-[2px_2px_0px_#1E1B18] hover:translate-y-0.5"
+          className={`w-full p-4 rounded-2xl flex items-center justify-between text-left transition-all ${
+            isNeumorphic
+              ? "neu-flat text-slate-800 hover:scale-[1.01]"
+              : isDark
+              ? "bg-[#27272A] border-2 border-[#3F3F46] hover:border-zinc-500 text-zinc-100"
+              : "bg-[#FFFDF9] border-2 border-[#1E1B18] text-[#1E1B18] shadow-[2px_2px_0px_#1E1B18] hover:translate-y-0.5"
           }`}
         >
           <div className="flex items-center gap-3.5">
             <div
-              className={`w-10 h-10 rounded-xl flex items-center justify-center border ${
-                isDark ? "bg-rose-500/10 text-rose-400 border-rose-500/20" : "bg-[#FFE4E6] text-[#E11D48] border-[#1E1B18]"
+              className={`w-10 h-10 rounded-xl flex items-center justify-center ${
+                isNeumorphic
+                  ? "neu-inset text-rose-500"
+                  : isDark
+                  ? "bg-rose-500/10 text-rose-400 border border-rose-500/20"
+                  : "bg-[#FFE4E6] text-[#E11D48] border border-[#1E1B18]"
               }`}
             >
               <Settings className="w-5 h-5" />
             </div>
             <div>
               <div className="text-xs font-black uppercase">SETTINGS</div>
-              <div className={`text-[11px] ${isDark ? "text-zinc-400" : "text-zinc-600"}`}>
+              <div className={`text-[11px] ${isNeumorphic ? "text-slate-500" : isDark ? "text-zinc-400" : "text-zinc-600"}`}>
                 Account, sound, appearance & policies
               </div>
             </div>
@@ -741,18 +840,23 @@ export const YouView: React.FC<YouViewProps> = ({
         {/* Log Out */}
         <button
           onClick={() => {
-            if (confirm("Reset current guest session?")) {
+            soundFx.playTap();
+            if (onLogOut) {
+              onLogOut();
+            } else if (confirm("Log out of current session?")) {
               onResetProgress();
             }
           }}
-          className={`w-full py-3 rounded-2xl border-2 text-xs font-mono flex items-center justify-center gap-2 transition-colors ${
-            isDark
-              ? "border-[#3F3F46] text-zinc-400 hover:text-zinc-200"
-              : "border-zinc-300 text-zinc-600 hover:text-[#1E1B18] hover:border-[#1E1B18]"
+          className={`w-full py-3 rounded-2xl text-xs font-mono flex items-center justify-center gap-2 transition-colors ${
+            isNeumorphic
+              ? "neu-btn text-rose-600 hover:text-rose-700"
+              : isDark
+              ? "border-2 border-[#3F3F46] text-zinc-400 hover:text-zinc-200"
+              : "border-2 border-zinc-300 text-zinc-600 hover:text-[#1E1B18] hover:border-[#1E1B18]"
           }`}
         >
           <LogOut className="w-4 h-4" />
-          <span>Log out</span>
+          <span>Switch Account / Log Out</span>
         </button>
       </div>
 
@@ -785,23 +889,31 @@ export const YouView: React.FC<YouViewProps> = ({
                 soundFx.playTap();
                 setInAchievementsView(true);
               }}
-              className={`shrink-0 w-36 p-4 rounded-2xl border-2 text-center space-y-1.5 transition-all text-left ${
-                b.isEarned
+              className={`shrink-0 w-36 p-4 rounded-2xl text-center space-y-1.5 transition-all text-left ${
+                isNeumorphic
+                  ? b.isEarned
+                    ? "neu-flat text-slate-800"
+                    : "neu-inset text-slate-400 opacity-70"
+                  : b.isEarned
                   ? isDark
-                    ? "bg-[#27272A] border-amber-400/60 text-zinc-100 shadow-md"
-                    : "bg-[#FFFDF9] border-[#1E1B18] text-[#1E1B18] shadow-[3px_3px_0px_#1E1B18]"
+                    ? "bg-[#27272A] border-2 border-amber-400/60 text-zinc-100 shadow-md"
+                    : "bg-[#FFFDF9] border-2 border-[#1E1B18] text-[#1E1B18] shadow-[3px_3px_0px_#1E1B18]"
                   : isDark
-                  ? "bg-[#18181B] border-[#3F3F46] text-zinc-500 opacity-60"
-                  : "bg-zinc-100 border-zinc-300 text-zinc-400 opacity-60"
+                  ? "bg-[#18181B] border-2 border-[#3F3F46] text-zinc-500 opacity-60"
+                  : "bg-zinc-100 border-2 border-zinc-300 text-zinc-400 opacity-60"
               }`}
             >
               <div
-                className={`w-10 h-10 mx-auto rounded-xl flex items-center justify-center border ${
-                  b.isEarned
+                className={`w-10 h-10 mx-auto rounded-xl flex items-center justify-center ${
+                  isNeumorphic
+                    ? b.isEarned
+                      ? "neu-inset text-amber-600"
+                      : "neu-flat text-slate-400"
+                    : b.isEarned
                     ? isDark
-                      ? "bg-amber-400/20 text-amber-400 border-amber-400/30"
-                      : "bg-[#FEF08A] text-[#1E1B18] border-[#1E1B18]"
-                    : "bg-zinc-200 text-zinc-400 border-transparent"
+                      ? "bg-amber-400/20 text-amber-400 border border-amber-400/30"
+                      : "bg-[#FEF08A] text-[#1E1B18] border border-[#1E1B18]"
+                    : "bg-zinc-200 text-zinc-400 border border-transparent"
                 }`}
               >
                 {b.id.includes("streak") ? (
@@ -813,7 +925,7 @@ export const YouView: React.FC<YouViewProps> = ({
                 )}
               </div>
               <div className="text-xs font-black truncate text-center">{b.title}</div>
-              <div className={`text-[10px] line-clamp-1 text-center ${isDark ? "text-zinc-400" : "text-zinc-600"}`}>
+              <div className={`text-[10px] line-clamp-1 text-center ${isNeumorphic ? "text-slate-500" : isDark ? "text-zinc-400" : "text-zinc-600"}`}>
                 {b.isEarned ? "Unlocked ✓" : `${b.currentValue}/${b.targetValue} ${b.unit}`}
               </div>
             </button>
@@ -825,14 +937,16 @@ export const YouView: React.FC<YouViewProps> = ({
       {activeSubModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in">
           <div
-            className={`w-full max-w-md rounded-3xl p-6 border-2 shadow-2xl space-y-4 ${
-              isDark
-                ? "bg-[#18181B] border-[#3F3F46] text-zinc-100"
-                : "bg-[#FFFDF9] border-[#1E1B18] text-[#1E1B18] shadow-[5px_5px_0px_#1E1B18]"
+            className={`w-full max-w-md rounded-3xl p-6 space-y-4 ${
+              isNeumorphic
+                ? "neu-raised text-slate-800"
+                : isDark
+                ? "bg-[#18181B] border-2 border-[#3F3F46] text-zinc-100 shadow-2xl"
+                : "bg-[#FFFDF9] border-2 border-[#1E1B18] text-[#1E1B18] shadow-[5px_5px_0px_#1E1B18]"
             }`}
           >
             <h3 className="text-base font-black uppercase">{activeSubModal}</h3>
-            <p className={`text-xs ${isDark ? "text-zinc-300" : "text-zinc-700"}`}>
+            <p className={`text-xs ${isNeumorphic ? "text-slate-600" : isDark ? "text-zinc-300" : "text-zinc-700"}`}>
               {activeSubModal === "friends" && "Connect with colleagues, trade AI prompts, and challenge peers in the Lab."}
               {activeSubModal === "portfolio" && "All your synthesized prompt templates and solved challenge code are archived here."}
               {activeSubModal === "bookmarks" && "Review saved lessons and interactive playground widgets."}
@@ -841,7 +955,9 @@ export const YouView: React.FC<YouViewProps> = ({
             <button
               onClick={() => setActiveSubModal(null)}
               className={`w-full py-2.5 rounded-xl font-black text-xs uppercase ${
-                isDark
+                isNeumorphic
+                  ? "neu-btn-primary text-white"
+                  : isDark
                   ? "bg-amber-400 text-zinc-950"
                   : "bg-[#4F46E5] text-white border-2 border-[#1E1B18] shadow-[2px_2px_0px_#1E1B18]"
               }`}

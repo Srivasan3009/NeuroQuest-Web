@@ -3,23 +3,26 @@ import {
   ArrowLeft,
   ArrowRight,
   BookOpen,
-  Sliders,
   Award,
   CheckCircle2,
   AlertCircle,
   HelpCircle,
   Sparkles,
   Bot,
-  RotateCcw,
-  Zap
+  Zap,
+  Flame,
+  Star,
+  Swords,
+  Check,
+  X,
+  Lightbulb,
+  MessageSquare,
+  Sun,
+  Moon
 } from "lucide-react";
 import { Quest, QuestPhase, Stage, AppTheme } from "../../types";
-import { DecisionBoundaryWidget } from "./widgets/DecisionBoundaryWidget";
-import { NeuronWeightsWidget } from "./widgets/NeuronWeightsWidget";
-import { TokenEmbeddingWidget } from "./widgets/TokenEmbeddingWidget";
-import { PromptTuningWidget } from "./widgets/PromptTuningWidget";
-import { AgentLoopWidget } from "./widgets/AgentLoopWidget";
 import { triggerCelebrationConfetti } from "../../utils/confetti";
+import { soundFx } from "../../utils/sound";
 
 interface QuestViewProps {
   quest: Quest;
@@ -28,8 +31,25 @@ interface QuestViewProps {
   onCompleteQuest: (questId: string, xpReward: number, skillTag: string) => void;
   onOpenTutor: (questTitle: string, phase: string) => void;
   onNavigateNextQuest?: (nextQuestId: string) => void;
+  onToggleTheme?: () => void;
   theme?: AppTheme;
 }
+
+const CHEERFUL_PRAISES = [
+  "Nailed it! 🚀",
+  "You're on fire! 🔥",
+  "Genius brain move! 💡",
+  "Flawless reasoning! ✨",
+  "Supercharged intelligence! ⚡",
+  "Absolute mastery! 🌟"
+];
+
+const MASCOT_TIPS = [
+  "NeuroBot says: 'Real-world machine learning is all about recognizing patterns rather than memorizing rules!'",
+  "NeuroBot says: 'You've got this! Think about the real-world analogy.'",
+  "NeuroBot says: 'High-dimensional space sounds scary, but it's just fancy coordinates!'",
+  "NeuroBot says: 'Every AI engineer started right where you are today!'"
+];
 
 export const QuestView: React.FC<QuestViewProps> = ({
   quest,
@@ -38,107 +58,116 @@ export const QuestView: React.FC<QuestViewProps> = ({
   onCompleteQuest,
   onOpenTutor,
   onNavigateNextQuest,
-  theme = "riso-pop"
+  onToggleTheme,
+  theme = "neumorphic"
 }) => {
-  const isDark = theme === "obsidian-gold" || theme === "obsidian-noir";
+  const isNeumorphic = theme === "neumorphic";
+  const isDark =
+    theme === "obsidian-gold" ||
+    theme === "obsidian-noir" ||
+    theme === "cyber-dark" ||
+    theme === "neon-matrix";
   const [phase, setPhase] = useState<QuestPhase>("learn");
-  const [interactSolved, setInteractSolved] = useState(false);
-  const [solveSolved, setSolveSolved] = useState(false);
-  const [selectedProveOption, setSelectedProveOption] = useState<string | null>(null);
-  const [proveSubmitted, setProveSubmitted] = useState(false);
-  const [isCompleted, setIsCompleted] = useState(false);
-  const [hintsUnlocked, setHintsUnlocked] = useState<number>(0);
+
+  // Step 1: Learn Card Navigation
+  const [activeQACardIdx, setActiveQACardIdx] = useState(0);
+
+  // Step 2: Gamified Concept Check State
+  const [selectedConceptOption, setSelectedConceptOption] = useState<string | null>(null);
+  const [conceptSubmitted, setConceptSubmitted] = useState(false);
+  const [conceptPraise, setConceptPraise] = useState(CHEERFUL_PRAISES[0]);
+
+  // Step 3: Boss Challenge State
+  const [selectedBossOption, setSelectedBossOption] = useState<string | null>(null);
+  const [bossSubmitted, setBossSubmitted] = useState(false);
+  const [bossPraise, setBossPraise] = useState(CHEERFUL_PRAISES[1]);
+
+  const qaCards = quest.learn.qaCards || [
+    {
+      badgeEmoji: "💡",
+      question: quest.learn.title,
+      answer: quest.learn.summary,
+      analogy: quest.learn.proTip
+    }
+  ];
+
+  const conceptCheckData = quest.conceptCheck || {
+    prompt: quest.prove?.question || "What is the core takeaway of this lesson?",
+    contextPill: "Step 2: Rapid Concept Check",
+    options: quest.prove?.options || [],
+    encouragement: "Fantastic instinct! You've grasped the fundamental concept."
+  };
+
+  const bossChallengeData = quest.bossChallenge || {
+    title: `Boss Challenge: ${quest.title}`,
+    scenario: quest.prove?.scenario || "A real-world engineering challenge puts your AI knowledge to the test.",
+    question: quest.prove?.question || "How do you solve this scenario?",
+    options: quest.prove?.options || [],
+    bossAvatar: "🤖",
+    bossQuote: "'Let's see if you truly mastered this concept!'",
+    victoryMessage: "BOSS DEFEATED! 🏆 You proved your conceptual mastery under real-world pressure!",
+    deepDiveExplanation: quest.prove?.deepDiveExplanation || "Great job completing this quest!"
+  };
 
   const handleNextPhase = () => {
-    if (phase === "learn") setPhase("interact");
-    else if (phase === "interact") setPhase("solve");
-    else if (phase === "solve") setPhase("prove");
-    else if (phase === "prove") {
+    soundFx.playTap();
+    if (phase === "learn") {
+      setPhase("concept-check");
+    } else if (phase === "concept-check") {
+      setPhase("boss-challenge");
+    } else if (phase === "boss-challenge") {
       setPhase("reward");
-      setIsCompleted(true);
+      soundFx.playMissionComplete();
       triggerCelebrationConfetti();
       onCompleteQuest(quest.id, quest.xpReward, quest.skillTag);
     }
   };
 
-  const handleProveSubmit = () => {
-    if (!selectedProveOption) return;
-    setProveSubmitted(true);
-    const chosen = quest.prove.options.find((o) => o.id === selectedProveOption);
+  const handleConceptSubmit = () => {
+    if (!selectedConceptOption) return;
+    setConceptSubmitted(true);
+    const chosen = conceptCheckData.options.find((o) => o.id === selectedConceptOption);
     if (chosen?.isCorrect) {
-      // Allow progression
+      soundFx.playCorrect();
+      triggerCelebrationConfetti();
+      const randomPraise = CHEERFUL_PRAISES[Math.floor(Math.random() * CHEERFUL_PRAISES.length)];
+      setConceptPraise(randomPraise);
+    } else {
+      soundFx.playTap();
     }
   };
 
-  const renderWidget = (isSolvePhase: boolean = false) => {
-    const onGoalAchieved = (achieved: boolean) => {
-      if (isSolvePhase) {
-        setSolveSolved(achieved);
-      } else {
-        setInteractSolved(achieved);
-      }
-    };
-
-    switch (quest.interact.widgetType) {
-      case "decision-boundary":
-        return (
-          <DecisionBoundaryWidget
-            targetAccuracy={isSolvePhase ? 95 : 85}
-            onGoalAchieved={(achieved) => onGoalAchieved(achieved)}
-          />
-        );
-      case "neuron-weights":
-        return (
-          <NeuronWeightsWidget
-            targetGate="AND"
-            onGoalAchieved={(achieved) => onGoalAchieved(achieved)}
-          />
-        );
-      case "token-embeddings":
-        return (
-          <TokenEmbeddingWidget
-            targetKeyword="Autonomous Neural Agent"
-            onGoalAchieved={(achieved) => onGoalAchieved(achieved)}
-          />
-        );
-      case "prompt-tuning":
-        return (
-          <PromptTuningWidget
-            onGoalAchieved={(achieved) => onGoalAchieved(achieved)}
-          />
-        );
-      case "agent-loop":
-        return (
-          <AgentLoopWidget
-            onGoalAchieved={(achieved) => onGoalAchieved(achieved)}
-          />
-        );
-      default:
-        return (
-          <div
-            className={`p-8 text-center rounded-2xl border-2 ${
-              isDark
-                ? "text-zinc-400 bg-zinc-900 border-zinc-800"
-                : "text-zinc-700 bg-white border-[#1E1B18]"
-            }`}
-          >
-            Interactive Module
-          </div>
-        );
+  const handleBossSubmit = () => {
+    if (!selectedBossOption) return;
+    setBossSubmitted(true);
+    const chosen = bossChallengeData.options.find((o) => o.id === selectedBossOption);
+    if (chosen?.isCorrect) {
+      soundFx.playMissionComplete();
+      triggerCelebrationConfetti();
+      const randomPraise = CHEERFUL_PRAISES[Math.floor(Math.random() * CHEERFUL_PRAISES.length)];
+      setBossPraise(randomPraise);
+    } else {
+      soundFx.playTap();
     }
   };
 
-  const phases: { id: QuestPhase; label: string; icon: any }[] = [
-    { id: "learn", label: "1. Learn", icon: BookOpen },
-    { id: "interact", label: "2. Interact", icon: Sliders },
-    { id: "solve", label: "3. Solve", icon: Zap },
-    { id: "prove", label: "4. Prove", icon: CheckCircle2 },
-    { id: "reward", label: "5. Reward", icon: Award },
+  const phasesList: { id: QuestPhase; label: string; icon: any; stepNumber: string }[] = [
+    { id: "learn", label: "Learn & Discover", icon: BookOpen, stepNumber: "Step 1" },
+    { id: "concept-check", label: "Concept Check", icon: Zap, stepNumber: "Step 2" },
+    { id: "boss-challenge", label: "Boss Challenge", icon: Swords, stepNumber: "Step 3" },
+    { id: "reward", label: "Victory Reward", icon: Award, stepNumber: "Step 4" }
   ];
 
+  const currentQACard = qaCards[activeQACardIdx] || qaCards[0];
+  const conceptChosenOpt = conceptCheckData.options.find((o) => o.id === selectedConceptOption);
+  const isConceptCorrect = conceptChosenOpt?.isCorrect ?? false;
+
+  const bossChosenOpt = bossChallengeData.options.find((o) => o.id === selectedBossOption);
+  const isBossCorrect = bossChosenOpt?.isCorrect ?? false;
+
   return (
-    <div id="quest-view-container" className="max-w-5xl mx-auto px-4 sm:px-6 py-8 space-y-6">
-      {/* Top Breadcrumb & Control Bar */}
+    <div id="quest-view-container" className="max-w-4xl mx-auto px-4 sm:px-6 py-6 space-y-6">
+      {/* Top Header Bar */}
       <div
         className={`flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b ${
           isDark ? "border-[#27272A]" : "border-[#1E1B18]"
@@ -148,14 +177,14 @@ export const QuestView: React.FC<QuestViewProps> = ({
           <button
             id="back-to-journey-btn"
             onClick={onBackToJourney}
-            className={`p-2 rounded-xl border-2 transition-transform active:scale-95 flex items-center gap-1.5 text-xs font-mono font-black uppercase ${
+            className={`p-2.5 rounded-xl border-2 transition-transform active:scale-95 flex items-center gap-2 text-xs font-mono font-black uppercase ${
               isDark
                 ? "bg-[#27272A] border-[#3F3F46] text-zinc-300 hover:text-zinc-100"
                 : "bg-white border-[#1E1B18] text-[#1E1B18] hover:bg-zinc-100 shadow-[2px_2px_0px_#1E1B18]"
             }`}
           >
             <ArrowLeft className="w-4 h-4 stroke-[2.5]" />
-            <span>Journey</span>
+            <span>Journey Path</span>
           </button>
           <div>
             <div
@@ -171,7 +200,48 @@ export const QuestView: React.FC<QuestViewProps> = ({
           </div>
         </div>
 
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2 sm:gap-3 flex-wrap sm:flex-nowrap">
+          {onToggleTheme && (
+            <button
+              id="btn-quest-theme-toggle"
+              onClick={() => {
+                soundFx.playTap();
+                onToggleTheme();
+              }}
+              className={`flex items-center p-1 rounded-xl transition-all active:scale-95 ${
+                isNeumorphic
+                  ? "neu-inset border border-slate-300/60"
+                  : isDark
+                  ? "bg-[#202023] border border-[#3F3F46] hover:border-amber-400/50"
+                  : "bg-[#F3EFE6] border-2 border-[#1E1B18] shadow-[1.5px_1.5px_0px_#1E1B18]"
+              }`}
+              title={isDark ? "Switch to Light Mode" : "Switch to Dark Mode"}
+              aria-label={isDark ? "Switch to Light Mode" : "Switch to Dark Mode"}
+            >
+              <span
+                className={`p-1.5 rounded-lg transition-all ${
+                  !isDark
+                    ? isNeumorphic
+                      ? "neu-raised text-amber-500 shadow-sm"
+                      : "bg-[#FEF08A] text-[#1E1B18] font-black border border-[#1E1B18]"
+                    : "text-zinc-500 hover:text-zinc-300 opacity-60"
+                }`}
+              >
+                <Sun className={`w-3.5 h-3.5 stroke-[2.5] ${!isDark ? "fill-amber-400/40 text-amber-500" : ""}`} />
+              </span>
+              <span
+                className={`p-1.5 rounded-lg transition-all ${
+                  isDark
+                    ? "bg-amber-400/20 text-amber-300 font-black border border-amber-400/40 shadow-[0_0_8px_rgba(251,191,36,0.3)]"
+                    : isNeumorphic
+                    ? "text-slate-400 hover:text-slate-600 opacity-60"
+                    : "text-zinc-500 hover:text-zinc-700 opacity-60"
+                }`}
+              >
+                <Moon className={`w-3.5 h-3.5 stroke-[2.5] ${isDark ? "fill-amber-400/30 text-amber-400" : ""}`} />
+              </span>
+            </button>
+          )}
           <button
             id="open-neuro-tutor-btn"
             onClick={() => onOpenTutor(quest.title, phase)}
@@ -182,7 +252,7 @@ export const QuestView: React.FC<QuestViewProps> = ({
             }`}
           >
             <Bot className="w-4 h-4 stroke-[2.5]" />
-            <span>Ask Tutor</span>
+            <span>Ask NeuroBot</span>
           </button>
           <div
             className={`px-3 py-2 rounded-xl border-2 text-xs font-mono font-black flex items-center gap-1.5 ${
@@ -197,41 +267,259 @@ export const QuestView: React.FC<QuestViewProps> = ({
         </div>
       </div>
 
-      {/* 5-Step Phase Stepper */}
+      {/* Gamified 3-Step Journey Stepper */}
       <div
-        className={`grid grid-cols-5 gap-1.5 p-1.5 border-2 rounded-2xl ${
-          isDark
-            ? "bg-[#27272A]/80 border-[#3F3F46]"
-            : "bg-white border-[#1E1B18] shadow-[3px_3px_0px_#1E1B18]"
+        className={`grid grid-cols-4 gap-2 p-2 rounded-2xl transition-all ${
+          isNeumorphic
+            ? "neu-flat"
+            : isDark
+            ? "bg-[#27272A]/80 border-2 border-[#3F3F46]"
+            : "bg-white border-2 border-[#1E1B18] shadow-[3px_3px_0px_#1E1B18]"
         }`}
       >
-        {phases.map((p) => {
+        {phasesList.map((p) => {
           const Icon = p.icon;
           const isActive = phase === p.id;
           return (
             <button
               key={p.id}
-              onClick={() => setPhase(p.id)}
-              className={`py-2 px-1 rounded-xl text-xs font-mono font-black flex items-center justify-center gap-1.5 transition-all border ${
+              onClick={() => {
+                soundFx.playTap();
+                setPhase(p.id);
+              }}
+              className={`py-2.5 px-2 rounded-xl text-xs font-mono font-black flex flex-col sm:flex-row items-center justify-center gap-1.5 transition-all ${
                 isActive
-                  ? isDark
-                    ? "bg-amber-400 text-zinc-950 border-amber-500 shadow-md"
-                    : "bg-[#1E1B18] text-white border-[#1E1B18] shadow-[2px_2px_0px_#1E1B18]"
+                  ? isNeumorphic
+                    ? "neu-btn-primary text-white"
+                    : isDark
+                    ? "bg-amber-400 text-zinc-950 border border-amber-500 shadow-md"
+                    : "bg-[#1E1B18] text-white border border-[#1E1B18] shadow-[2px_2px_0px_#1E1B18]"
+                  : isNeumorphic
+                  ? "neu-inset text-slate-500 hover:text-slate-900"
                   : isDark
-                  ? "border-transparent text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800"
-                  : "border-transparent text-zinc-600 hover:text-zinc-950 hover:bg-zinc-100"
+                  ? "border border-transparent text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800"
+                  : "border border-transparent text-zinc-600 hover:text-zinc-950 hover:bg-zinc-100"
               }`}
             >
-              <Icon className="w-3.5 h-3.5 stroke-[2.5]" />
-              <span className="hidden sm:inline">{p.label}</span>
+              <Icon className="w-4 h-4 stroke-[2.5]" />
+              <div className="text-center sm:text-left">
+                <span className="block text-[9px] uppercase tracking-wider opacity-75">
+                  {p.stepNumber}
+                </span>
+                <span className="hidden sm:inline">{p.label}</span>
+              </div>
             </button>
           );
         })}
       </div>
 
-      {/* PHASE 1: LEARN */}
+      {/* Cheerful Mascot Coach Banner */}
+      <div
+        className={`p-3.5 rounded-2xl flex items-center gap-3 text-xs transition-all ${
+          isNeumorphic
+            ? "neu-raised text-slate-800"
+            : isDark
+            ? "bg-[#18181B] border-2 border-amber-400/30 text-amber-300"
+            : "bg-[#FEF9C3] border-2 border-[#1E1B18] text-[#1E1B18] shadow-[2px_2px_0px_#1E1B18]"
+        }`}
+      >
+        <div
+          className={`w-9 h-9 rounded-xl flex items-center justify-center text-lg shrink-0 ${
+            isNeumorphic ? "neu-inset" : "bg-white border-2 border-current shadow-sm"
+          }`}
+        >
+          🤖
+        </div>
+        <div className="flex-1 font-bold">
+          {MASCOT_TIPS[Math.abs(quest.title.length) % MASCOT_TIPS.length]}
+        </div>
+        <div className={`hidden sm:flex items-center gap-1 text-[11px] font-mono font-black px-2.5 py-1 rounded-lg uppercase ${isNeumorphic ? "neu-inset text-amber-600" : "bg-black/5 dark:bg-white/10"}`}>
+          <Flame className="w-3.5 h-3.5 text-amber-500 fill-current" />
+          <span>Curious Mode</span>
+        </div>
+      </div>
+
+      {/* ========================================================= */}
+      {/* STEP 1: BITE-SIZED Q&A CARD JOURNEY */}
+      {/* ========================================================= */}
       {phase === "learn" && (
         <div id="quest-phase-learn" className="space-y-6">
+          {/* Active Card Viewer */}
+          <div
+            className={`border-2 rounded-3xl p-6 sm:p-8 space-y-6 relative transition-all ${
+              isDark
+                ? "bg-[#18181B] border-[#3F3F46] text-zinc-100 shadow-xl"
+                : "bg-[#FFFDF9] border-[#1E1B18] shadow-[5px_5px_0px_#1E1B18] text-[#1E1B18]"
+            }`}
+          >
+            {/* Card Progress Pills */}
+            <div className="flex items-center justify-between border-b pb-4 border-zinc-200 dark:border-zinc-800">
+              <div className="flex items-center gap-2">
+                <span className="text-xl">{currentQACard.badgeEmoji || "💡"}</span>
+                <span
+                  className={`text-xs font-mono uppercase tracking-widest font-black ${
+                    isDark ? "text-amber-400" : "text-[#4F46E5]"
+                  }`}
+                >
+                  Step 1: Bite-Sized Q&A Card {activeQACardIdx + 1} of {qaCards.length}
+                </span>
+              </div>
+              <div className="flex gap-1.5">
+                {qaCards.map((_, idx) => (
+                  <button
+                    key={idx}
+                    onClick={() => {
+                      soundFx.playTap();
+                      setActiveQACardIdx(idx);
+                    }}
+                    className={`w-7 h-2 rounded-full transition-all ${
+                      idx === activeQACardIdx
+                        ? isDark
+                          ? "bg-amber-400 w-9"
+                          : "bg-[#4F46E5] w-9"
+                        : isDark
+                        ? "bg-zinc-700"
+                        : "bg-zinc-300"
+                    }`}
+                  />
+                ))}
+              </div>
+            </div>
+
+            {/* The Big Question */}
+            <div className="space-y-3">
+              <div className="flex items-center gap-2">
+                <span className="px-2.5 py-0.5 rounded-full text-[10px] font-mono font-black uppercase bg-amber-400/20 text-amber-500 border border-amber-400/40">
+                  Question
+                </span>
+              </div>
+              <h2 className="text-xl sm:text-2xl font-black tracking-tight">
+                {currentQACard.question}
+              </h2>
+            </div>
+
+            {/* Plain English Answer */}
+            <div
+              className={`p-5 rounded-2xl border-2 space-y-2 ${
+                isDark
+                  ? "bg-[#27272A] border-[#3F3F46] text-zinc-100"
+                  : "bg-white border-[#1E1B18] text-zinc-900 shadow-[2px_2px_0px_#1E1B18]"
+              }`}
+            >
+              <div className="flex items-center gap-1.5 text-xs font-mono font-black uppercase text-emerald-600 dark:text-emerald-400">
+                <CheckCircle2 className="w-4 h-4" />
+                <span>The Core Concept</span>
+              </div>
+              <p className="text-sm sm:text-base leading-relaxed font-medium">
+                {currentQACard.answer}
+              </p>
+            </div>
+
+            {/* Real-World Analogy (Ages 15+ Friendly) */}
+            <div
+              className={`p-5 rounded-2xl border-2 flex items-start gap-3.5 ${
+                isDark
+                  ? "bg-amber-950/20 border-amber-400/40 text-amber-200"
+                  : "bg-[#EEF2FF] border-[#1E1B18] text-[#1E1B18] shadow-[2px_2px_0px_#1E1B18]"
+              }`}
+            >
+              <div className="w-8 h-8 rounded-xl bg-amber-400 text-zinc-950 flex items-center justify-center shrink-0 mt-0.5 font-bold shadow-sm">
+                <Lightbulb className="w-4 h-4 stroke-[2.5]" />
+              </div>
+              <div className="space-y-1 text-xs sm:text-sm">
+                <span className="font-mono font-black uppercase tracking-wider text-[11px] block">
+                  Real-World Analogy:
+                </span>
+                <p className="leading-relaxed font-medium">
+                  {currentQACard.analogy}
+                </p>
+              </div>
+            </div>
+
+            {/* Card Switcher Buttons */}
+            <div className="flex items-center justify-between pt-2">
+              <button
+                onClick={() => {
+                  soundFx.playTap();
+                  setActiveQACardIdx((prev) => Math.max(0, prev - 1));
+                }}
+                disabled={activeQACardIdx === 0}
+                className={`px-4 py-2.5 rounded-xl border-2 text-xs font-mono font-black uppercase transition-all disabled:opacity-30 ${
+                  isDark
+                    ? "border-[#3F3F46] text-zinc-400 hover:text-zinc-100 bg-[#27272A]"
+                    : "border-[#1E1B18] text-[#1E1B18] bg-white hover:bg-zinc-100 shadow-[2px_2px_0px_#1E1B18]"
+                }`}
+              >
+                ← Previous Card
+              </button>
+
+              {activeQACardIdx < qaCards.length - 1 ? (
+                <button
+                  id="next-qa-card-btn"
+                  onClick={() => {
+                    soundFx.playTap();
+                    setActiveQACardIdx((prev) => prev + 1);
+                  }}
+                  className={`px-6 py-2.5 rounded-xl font-black text-xs uppercase tracking-wider flex items-center gap-2 transition-transform active:scale-95 ${
+                    isDark
+                      ? "bg-amber-400 text-zinc-950 hover:bg-amber-300 shadow-md"
+                      : "bg-[#1E1B18] text-white hover:bg-black border-2 border-[#1E1B18] shadow-[3px_3px_0px_#1E1B18]"
+                  }`}
+                >
+                  <span>Next Card ({activeQACardIdx + 2}/{qaCards.length})</span>
+                  <ArrowRight className="w-4 h-4" />
+                </button>
+              ) : (
+                <button
+                  id="proceed-to-concept-check-btn"
+                  onClick={handleNextPhase}
+                  className={`px-6 py-2.5 rounded-xl font-black text-xs uppercase tracking-wider flex items-center gap-2 transition-transform active:scale-95 ${
+                    isDark
+                      ? "bg-emerald-500 text-zinc-950 hover:bg-emerald-400 shadow-md"
+                      : "bg-[#059669] text-white hover:bg-emerald-700 border-2 border-[#1E1B18] shadow-[3px_3px_0px_#1E1B18]"
+                  }`}
+                >
+                  <span>Ready for Rapid Quiz! 🚀</span>
+                  <ArrowRight className="w-4 h-4" />
+                </button>
+              )}
+            </div>
+          </div>
+
+          {/* Key Concepts Mini Glossary */}
+          <div
+            className={`border-2 rounded-2xl p-5 space-y-3 ${
+              isDark ? "bg-[#18181B] border-[#3F3F46]" : "bg-white border-[#1E1B18] shadow-[3px_3px_0px_#1E1B18]"
+            }`}
+          >
+            <div className="flex items-center gap-2 text-xs font-mono font-black uppercase text-zinc-500">
+              <Sparkles className="w-3.5 h-3.5 text-amber-500" />
+              <span>Key Terms in this Quest</span>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              {(quest.learn.keyConcepts || []).map((kc, idx) => (
+                <div
+                  key={idx}
+                  className={`p-3 rounded-xl border ${
+                    isDark ? "bg-zinc-900 border-zinc-800" : "bg-zinc-50 border-zinc-200"
+                  }`}
+                >
+                  <div className="text-xs font-black">{kc.term}</div>
+                  <div className="text-[11px] text-zinc-500 mt-1 leading-relaxed">
+                    {kc.definition}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ========================================================= */}
+      {/* STEP 2: GAMIFIED CONCEPT CHECK (RAPID-FIRE QUIZ) */}
+      {/* ========================================================= */}
+      {phase === "concept-check" && (
+        <div id="quest-phase-concept-check" className="space-y-6">
           <div
             className={`border-2 rounded-3xl p-6 sm:p-8 space-y-6 ${
               isDark
@@ -240,317 +528,28 @@ export const QuestView: React.FC<QuestViewProps> = ({
             }`}
           >
             <div className="space-y-2">
-              <span
-                className={`text-xs font-mono uppercase tracking-widest font-black ${
-                  isDark ? "text-amber-400" : "text-[#4F46E5]"
-                }`}
-              >
-                Conceptual Overview
-              </span>
-              <h2 className="text-2xl font-black tracking-tight uppercase">
-                {quest.learn.title}
-              </h2>
-              <p
-                className={`text-sm leading-relaxed max-w-3xl ${
-                  isDark ? "text-zinc-300" : "text-zinc-700"
-                }`}
-              >
-                {quest.learn.summary}
-              </p>
-            </div>
-
-            {/* Key concepts cards */}
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-2">
-              {(quest.learn.keyConcepts || []).map((item, idx) => (
-                <div
-                  key={idx}
-                  className={`border-2 rounded-2xl p-4 space-y-2 ${
-                    isDark
-                      ? "bg-[#27272A] border-[#3F3F46]"
-                      : "bg-white border-[#1E1B18] shadow-[2px_2px_0px_#1E1B18]"
+              <div className="flex items-center justify-between">
+                <span
+                  className={`text-xs font-mono uppercase tracking-widest font-black ${
+                    isDark ? "text-amber-400" : "text-[#4F46E5]"
                   }`}
                 >
-                  <div
-                    className={`text-xs font-mono font-black uppercase ${
-                      isDark ? "text-amber-400" : "text-[#4F46E5]"
-                    }`}
-                  >
-                    {item.term}
-                  </div>
-                  <div
-                    className={`text-xs leading-relaxed ${
-                      isDark ? "text-zinc-300" : "text-zinc-700"
-                    }`}
-                  >
-                    {item.definition}
-                  </div>
-                </div>
-              ))}
-            </div>
-
-            {/* Markdown deep dive */}
-            <div
-              className={`border-2 rounded-2xl p-5 text-xs font-mono whitespace-pre-wrap leading-relaxed ${
-                isDark
-                  ? "bg-[#27272A]/70 border-[#3F3F46] text-zinc-300"
-                  : "bg-white border-[#1E1B18] text-zinc-800 shadow-[2px_2px_0px_#1E1B18]"
-              }`}
-            >
-              {quest.learn.contentMarkdown}
-            </div>
-
-            {/* Pro Tip */}
-            <div
-              className={`p-4 border-2 rounded-2xl text-xs flex items-start gap-3 ${
-                isDark
-                  ? "bg-amber-400/10 border-amber-400 text-amber-300"
-                  : "bg-[#FEF08A] border-[#1E1B18] text-[#1E1B18] shadow-[3px_3px_0px_#1E1B18]"
-              }`}
-            >
-              <Sparkles className="w-4 h-4 shrink-0 mt-0.5 text-amber-500" />
-              <div>
-                <span className="font-black uppercase tracking-wider text-[11px] font-mono block mb-0.5">
-                  Neuro Intuition Note
+                  {conceptCheckData.contextPill || "Step 2: Rapid Concept Check"}
                 </span>
-                <span className="font-medium">{quest.learn.proTip}</span>
+                <span className="text-xs font-mono font-black px-2.5 py-0.5 rounded-full bg-amber-400/20 text-amber-500 border border-amber-400/40">
+                  Instant Feedback ⚡
+                </span>
               </div>
-            </div>
-          </div>
-
-          <div className="flex justify-end">
-            <button
-              id="continue-to-interact-btn"
-              onClick={handleNextPhase}
-              className={`px-6 py-3 rounded-2xl font-black text-xs uppercase tracking-wider flex items-center gap-2 transition-transform active:scale-95 ${
-                isDark
-                  ? "bg-amber-400 text-zinc-950 hover:bg-amber-300 shadow-md"
-                  : "bg-[#1E1B18] text-white hover:bg-black border-2 border-[#1E1B18] shadow-[4px_4px_0px_#1E1B18]"
-              }`}
-            >
-              <span>Proceed to Sandbox</span>
-              <ArrowRight className="w-4 h-4" />
-            </button>
-          </div>
-        </div>
-      )}
-
-      {/* PHASE 2: INTERACT */}
-      {phase === "interact" && (
-        <div id="quest-phase-interact" className="space-y-6">
-          <div
-            className={`border-2 rounded-3xl p-6 space-y-2 ${
-              isDark
-                ? "bg-[#18181B] border-[#3F3F46] text-zinc-100"
-                : "bg-[#FFFDF9] border-[#1E1B18] shadow-[4px_4px_0px_#1E1B18] text-[#1E1B18]"
-            }`}
-          >
-            <span
-              className={`text-xs font-mono uppercase tracking-wider font-black ${
-                isDark ? "text-amber-400" : "text-[#4F46E5]"
-              }`}
-            >
-              Interactive Experimentation
-            </span>
-            <h2 className="text-xl font-black tracking-tight uppercase">
-              {quest.interact.title}
-            </h2>
-            <p className={`text-sm leading-relaxed ${isDark ? "text-zinc-300" : "text-zinc-700"}`}>
-              {quest.interact.instruction}
-            </p>
-          </div>
-
-          {/* Render the interactive widget */}
-          {renderWidget(false)}
-
-          <div className="flex items-center justify-between pt-2">
-            <button
-              onClick={() => setPhase("learn")}
-              className={`px-4 py-2.5 rounded-xl border-2 text-xs font-mono font-black uppercase transition-colors ${
-                isDark
-                  ? "border-[#3F3F46] text-zinc-400 hover:text-zinc-100 bg-[#27272A]"
-                  : "border-[#1E1B18] text-[#1E1B18] bg-white hover:bg-zinc-100 shadow-[2px_2px_0px_#1E1B18]"
-              }`}
-            >
-              ← Review Concept
-            </button>
-            <button
-              id="continue-to-solve-btn"
-              onClick={handleNextPhase}
-              className={`px-6 py-2.5 rounded-xl font-black text-xs uppercase tracking-wider flex items-center gap-2 transition-transform active:scale-95 ${
-                isDark
-                  ? "bg-amber-400 text-zinc-950 hover:bg-amber-300 shadow-md"
-                  : "bg-[#1E1B18] text-white hover:bg-black border-2 border-[#1E1B18] shadow-[3px_3px_0px_#1E1B18]"
-              }`}
-            >
-              <span>Advance to Challenge</span>
-              <ArrowRight className="w-4 h-4" />
-            </button>
-          </div>
-        </div>
-      )}
-
-      {/* PHASE 3: SOLVE */}
-      {phase === "solve" && (
-        <div id="quest-phase-solve" className="space-y-6">
-          <div
-            className={`border-2 rounded-3xl p-6 space-y-4 ${
-              isDark
-                ? "bg-[#18181B] border-[#3F3F46] text-zinc-100"
-                : "bg-[#FFFDF9] border-[#1E1B18] shadow-[4px_4px_0px_#1E1B18] text-[#1E1B18]"
-            }`}
-          >
-            <div className="flex items-center justify-between">
-              <span
-                className={`text-xs font-mono uppercase tracking-wider font-black ${
-                  isDark ? "text-amber-400" : "text-[#4F46E5]"
-                }`}
-              >
-                Objective Mission
-              </span>
-              <span
-                className={`text-xs font-mono font-bold px-2.5 py-0.5 rounded-full border ${
-                  solveSolved
-                    ? "bg-emerald-500/20 text-emerald-600 border-emerald-500"
-                    : isDark
-                    ? "bg-zinc-800 text-zinc-400 border-zinc-700"
-                    : "bg-zinc-100 text-zinc-600 border-zinc-300"
-                }`}
-              >
-                Status: {solveSolved ? "Satisfied" : "Pending"}
-              </span>
-            </div>
-            <h2 className="text-xl font-black tracking-tight uppercase">
-              {quest.solve.title}
-            </h2>
-            <p className={`text-sm leading-relaxed ${isDark ? "text-zinc-300" : "text-zinc-700"}`}>
-              {quest.solve.missionBrief}
-            </p>
-
-            <div
-              className={`p-3.5 border-2 rounded-2xl text-xs font-mono flex items-center gap-2 ${
-                isDark
-                  ? "bg-[#27272A] border-[#3F3F46] text-amber-300"
-                  : "bg-[#FEF08A]/50 border-[#1E1B18] text-[#1E1B18]"
-              }`}
-            >
-              <span className="font-black uppercase">Target:</span>
-              <span className="font-bold">{quest.solve.targetObjective}</span>
-            </div>
-          </div>
-
-          {/* Interactive Challenge Canvas */}
-          {renderWidget(true)}
-
-          {/* Progressive Hint Drawer */}
-          <div
-            className={`border-2 rounded-2xl p-4 space-y-3 ${
-              isDark ? "bg-[#18181B] border-[#3F3F46]" : "bg-white border-[#1E1B18] shadow-[3px_3px_0px_#1E1B18]"
-            }`}
-          >
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-mono font-bold flex items-center gap-1.5">
-                <HelpCircle className="w-3.5 h-3.5 text-amber-500" />
-                <span>Need Guidance? ({hintsUnlocked}/2 hints unlocked)</span>
-              </span>
-              {hintsUnlocked < 2 && (
-                <button
-                  onClick={() => setHintsUnlocked((prev) => prev + 1)}
-                  className={`text-xs font-mono font-black uppercase underline ${
-                    isDark ? "text-amber-400 hover:text-amber-300" : "text-[#4F46E5] hover:text-[#4338CA]"
-                  }`}
-                >
-                  Unlock Hint #{hintsUnlocked + 1}
-                </button>
-              )}
-            </div>
-
-            {hintsUnlocked >= 1 && (
-              <div
-                className={`p-3 border-2 rounded-xl text-xs ${
-                  isDark
-                    ? "bg-amber-950/40 border-amber-500/40 text-amber-200"
-                    : "bg-[#FEF9C3] border-[#1E1B18] text-[#1E1B18]"
-                }`}
-              >
-                <strong>Hint 1:</strong> {quest.solve.firstHint}
-              </div>
-            )}
-            {hintsUnlocked >= 2 && (
-              <div
-                className={`p-3 border-2 rounded-xl text-xs ${
-                  isDark
-                    ? "bg-zinc-800 border-zinc-600 text-zinc-200"
-                    : "bg-[#EEF2FF] border-[#1E1B18] text-[#1E1B18]"
-                }`}
-              >
-                <strong>Hint 2:</strong> {quest.solve.secondHint}
-              </div>
-            )}
-          </div>
-
-          <div className="flex items-center justify-between pt-2">
-            <button
-              onClick={() => setPhase("interact")}
-              className={`px-4 py-2.5 rounded-xl border-2 text-xs font-mono font-black uppercase transition-colors ${
-                isDark
-                  ? "border-[#3F3F46] text-zinc-400 hover:text-zinc-100 bg-[#27272A]"
-                  : "border-[#1E1B18] text-[#1E1B18] bg-white hover:bg-zinc-100 shadow-[2px_2px_0px_#1E1B18]"
-              }`}
-            >
-              ← Back to Sandbox
-            </button>
-            <button
-              id="continue-to-prove-btn"
-              onClick={handleNextPhase}
-              disabled={!solveSolved}
-              className={`px-6 py-2.5 rounded-xl font-black text-xs uppercase tracking-wider flex items-center gap-2 transition-transform active:scale-95 disabled:opacity-40 ${
-                isDark
-                  ? "bg-amber-400 text-zinc-950 hover:bg-amber-300 shadow-md"
-                  : "bg-[#1E1B18] text-white hover:bg-black border-2 border-[#1E1B18] shadow-[3px_3px_0px_#1E1B18]"
-              }`}
-            >
-              <span>Prove Comprehension</span>
-              <ArrowRight className="w-4 h-4" />
-            </button>
-          </div>
-        </div>
-      )}
-
-      {/* PHASE 4: PROVE */}
-      {phase === "prove" && (
-        <div id="quest-phase-prove" className="space-y-6">
-          <div
-            className={`border-2 rounded-3xl p-6 sm:p-8 space-y-4 ${
-              isDark
-                ? "bg-[#18181B] border-[#3F3F46] text-zinc-100"
-                : "bg-[#FFFDF9] border-[#1E1B18] shadow-[5px_5px_0px_#1E1B18] text-[#1E1B18]"
-            }`}
-          >
-            <span
-              className={`text-xs font-mono uppercase tracking-wider font-black ${
-                isDark ? "text-amber-400" : "text-[#4F46E5]"
-              }`}
-            >
-              Comprehension Check
-            </span>
-            <h2 className="text-lg sm:text-xl font-black uppercase tracking-tight">
-              {quest.prove.question}
-            </h2>
-            <div
-              className={`p-3.5 border-2 rounded-2xl text-xs italic ${
-                isDark
-                  ? "bg-[#27272A] border-[#3F3F46] text-zinc-300"
-                  : "bg-white border-[#1E1B18] text-zinc-700 shadow-[2px_2px_0px_#1E1B18]"
-              }`}
-            >
-              Scenario: {quest.prove.scenario}
+              <h2 className="text-xl sm:text-2xl font-black tracking-tight">
+                {conceptCheckData.prompt}
+              </h2>
             </div>
 
             {/* Multiple Choice Options */}
             <div className="space-y-3 pt-2">
-              {(quest.prove.options || []).map((opt) => {
-                const isSelected = selectedProveOption === opt.id;
-                const showFeedback = proveSubmitted;
+              {conceptCheckData.options.map((opt) => {
+                const isSelected = selectedConceptOption === opt.id;
+                const showFeedback = conceptSubmitted;
 
                 let cardStyle = isDark
                   ? "bg-[#27272A] border-[#3F3F46] text-zinc-200 hover:border-zinc-500"
@@ -558,16 +557,16 @@ export const QuestView: React.FC<QuestViewProps> = ({
 
                 if (isSelected && !showFeedback) {
                   cardStyle = isDark
-                    ? "bg-amber-400/20 border-amber-400 text-amber-200"
+                    ? "bg-amber-400/20 border-amber-400 text-amber-200 shadow-md"
                     : "bg-[#EEF2FF] border-[#4F46E5] text-[#1E1B18] shadow-[3px_3px_0px_#1E1B18]";
                 } else if (showFeedback) {
                   if (opt.isCorrect) {
                     cardStyle = isDark
-                      ? "bg-emerald-950/50 border-emerald-500 text-emerald-200"
+                      ? "bg-emerald-950/60 border-emerald-500 text-emerald-200 shadow-md"
                       : "bg-[#ECFDF5] border-emerald-700 text-emerald-950 shadow-[3px_3px_0px_#047857]";
                   } else if (isSelected && !opt.isCorrect) {
                     cardStyle = isDark
-                      ? "bg-rose-950/50 border-rose-500 text-rose-200"
+                      ? "bg-rose-950/60 border-rose-500 text-rose-200 shadow-md"
                       : "bg-[#FFF1F2] border-rose-700 text-rose-950 shadow-[3px_3px_0px_#BE123C]";
                   }
                 }
@@ -575,7 +574,12 @@ export const QuestView: React.FC<QuestViewProps> = ({
                 return (
                   <div
                     key={opt.id}
-                    onClick={() => !proveSubmitted && setSelectedProveOption(opt.id)}
+                    onClick={() => {
+                      if (!conceptSubmitted) {
+                        soundFx.playTap();
+                        setSelectedConceptOption(opt.id);
+                      }
+                    }}
                     className={`p-4 rounded-2xl border-2 transition-all cursor-pointer ${cardStyle}`}
                   >
                     <div className="flex items-start gap-3">
@@ -592,22 +596,22 @@ export const QuestView: React.FC<QuestViewProps> = ({
                       >
                         {isSelected ? "✓" : ""}
                       </div>
-                      <div className="space-y-1 text-xs leading-relaxed font-bold">
+                      <div className="space-y-1.5 text-xs sm:text-sm leading-relaxed font-bold flex-1">
                         <div>{opt.text}</div>
                         {showFeedback && (isSelected || opt.isCorrect) && (
-                          <p
-                            className={`text-[11px] font-mono pt-1 font-bold ${
+                          <div
+                            className={`p-2.5 rounded-xl border text-xs font-mono font-medium ${
                               opt.isCorrect
                                 ? isDark
-                                  ? "text-emerald-400"
-                                  : "text-emerald-800"
+                                  ? "bg-emerald-900/30 border-emerald-700/50 text-emerald-300"
+                                  : "bg-emerald-100/70 border-emerald-300 text-emerald-900"
                                 : isDark
-                                ? "text-rose-400"
-                                : "text-rose-800"
+                                ? "bg-rose-900/30 border-rose-700/50 text-rose-300"
+                                : "bg-rose-100/70 border-rose-300 text-rose-900"
                             }`}
                           >
                             {opt.explanation}
-                          </p>
+                          </div>
                         )}
                       </div>
                     </div>
@@ -616,90 +620,358 @@ export const QuestView: React.FC<QuestViewProps> = ({
               })}
             </div>
 
-            {/* Deep Dive Note when completed */}
-            {proveSubmitted && (
+            {/* Gamified Success / Try Again Feedback Banner */}
+            {conceptSubmitted && (
               <div
-                className={`p-4 border-2 rounded-2xl space-y-1 ${
-                  isDark
-                    ? "bg-[#27272A] border-[#3F3F46]"
-                    : "bg-[#FEF08A]/60 border-[#1E1B18] shadow-[2px_2px_0px_#1E1B18]"
+                className={`p-4 rounded-2xl border-2 flex items-center gap-3 animate-fade-in ${
+                  isConceptCorrect
+                    ? isDark
+                      ? "bg-emerald-950/50 border-emerald-500 text-emerald-200"
+                      : "bg-[#DCFCE7] border-emerald-700 text-emerald-950 shadow-[2px_2px_0px_#047857]"
+                    : isDark
+                    ? "bg-rose-950/50 border-rose-500 text-rose-200"
+                    : "bg-[#FFE4E6] border-rose-700 text-rose-950 shadow-[2px_2px_0px_#BE123C]"
                 }`}
               >
-                <span
-                  className={`text-[11px] font-mono uppercase font-black ${
-                    isDark ? "text-amber-400" : "text-[#4F46E5]"
-                  }`}
-                >
-                  Engineering Takeaway:
-                </span>
-                <p className={`text-xs leading-relaxed ${isDark ? "text-zinc-300" : "text-zinc-800"}`}>
-                  {quest.prove.deepDiveExplanation}
-                </p>
+                <div className="text-2xl">{isConceptCorrect ? "🎉" : "💡"}</div>
+                <div className="flex-1">
+                  <div className="font-black text-sm uppercase tracking-wide">
+                    {isConceptCorrect ? conceptPraise : "Not quite, but you're learning!"}
+                  </div>
+                  <div className="text-xs font-medium opacity-90 mt-0.5">
+                    {isConceptCorrect
+                      ? conceptCheckData.encouragement
+                      : "Check the explanation above and try another option!"}
+                  </div>
+                </div>
+                {!isConceptCorrect && (
+                  <button
+                    onClick={() => {
+                      soundFx.playTap();
+                      setConceptSubmitted(false);
+                      setSelectedConceptOption(null);
+                    }}
+                    className="px-3 py-1.5 rounded-xl border-2 text-xs font-mono font-black uppercase bg-white dark:bg-zinc-800 text-current hover:opacity-80"
+                  >
+                    Try Again
+                  </button>
+                )}
               </div>
             )}
-          </div>
 
-          <div className="flex items-center justify-between pt-2">
-            <button
-              onClick={() => setPhase("solve")}
-              className={`px-4 py-2.5 rounded-xl border-2 text-xs font-mono font-black uppercase transition-colors ${
-                isDark
-                  ? "border-[#3F3F46] text-zinc-400 hover:text-zinc-100 bg-[#27272A]"
-                  : "border-[#1E1B18] text-[#1E1B18] bg-white hover:bg-zinc-100 shadow-[2px_2px_0px_#1E1B18]"
-              }`}
-            >
-              ← Back to Mission
-            </button>
-
-            {!proveSubmitted ? (
+            {/* Bottom Actions */}
+            <div className="flex items-center justify-between pt-2">
               <button
-                id="submit-prove-answer-btn"
-                onClick={handleProveSubmit}
-                disabled={!selectedProveOption}
-                className={`px-6 py-2.5 rounded-xl font-black text-xs uppercase tracking-wider transition-transform active:scale-95 disabled:opacity-40 ${
+                onClick={() => {
+                  soundFx.playTap();
+                  setPhase("learn");
+                }}
+                className={`px-4 py-2.5 rounded-xl border-2 text-xs font-mono font-black uppercase transition-all ${
                   isDark
-                    ? "bg-amber-400 text-zinc-950 hover:bg-amber-300 shadow-md"
-                    : "bg-[#1E1B18] text-white hover:bg-black border-2 border-[#1E1B18] shadow-[3px_3px_0px_#1E1B18]"
+                    ? "border-[#3F3F46] text-zinc-400 hover:text-zinc-100 bg-[#27272A]"
+                    : "border-[#1E1B18] text-[#1E1B18] bg-white hover:bg-zinc-100 shadow-[2px_2px_0px_#1E1B18]"
                 }`}
               >
-                Validate Answer
+                ← Review Cards
               </button>
-            ) : (
-              <button
-                id="claim-quest-reward-btn"
-                onClick={handleNextPhase}
-                className={`px-6 py-2.5 rounded-xl font-black text-xs uppercase tracking-wider flex items-center gap-2 transition-transform active:scale-95 ${
-                  isDark
-                    ? "bg-emerald-500 text-zinc-950 hover:bg-emerald-400 shadow-md"
-                    : "bg-[#059669] text-white hover:bg-emerald-700 border-2 border-[#1E1B18] shadow-[3px_3px_0px_#1E1B18]"
-                }`}
-              >
-                <span>Claim XP & Finish Quest</span>
-                <Award className="w-4 h-4" />
-              </button>
-            )}
+
+              {!conceptSubmitted ? (
+                <button
+                  id="submit-concept-check-btn"
+                  onClick={handleConceptSubmit}
+                  disabled={!selectedConceptOption}
+                  className={`px-6 py-2.5 rounded-xl font-black text-xs uppercase tracking-wider transition-transform active:scale-95 disabled:opacity-40 ${
+                    isDark
+                      ? "bg-amber-400 text-zinc-950 hover:bg-amber-300 shadow-md"
+                      : "bg-[#1E1B18] text-white hover:bg-black border-2 border-[#1E1B18] shadow-[3px_3px_0px_#1E1B18]"
+                  }`}
+                >
+                  Check Answer ⚡
+                </button>
+              ) : (
+                <button
+                  id="proceed-to-boss-challenge-btn"
+                  onClick={handleNextPhase}
+                  className={`px-6 py-2.5 rounded-xl font-black text-xs uppercase tracking-wider flex items-center gap-2 transition-transform active:scale-95 ${
+                    isDark
+                      ? "bg-emerald-500 text-zinc-950 hover:bg-emerald-400 shadow-md"
+                      : "bg-[#059669] text-white hover:bg-emerald-700 border-2 border-[#1E1B18] shadow-[3px_3px_0px_#1E1B18]"
+                  }`}
+                >
+                  <span>Advance to Boss Challenge ⚔️</span>
+                  <ArrowRight className="w-4 h-4" />
+                </button>
+              )}
+            </div>
           </div>
         </div>
       )}
 
-      {/* PHASE 5: REWARD */}
+      {/* ========================================================= */}
+      {/* STEP 3: SCENARIO-BASED BOSS CHALLENGE */}
+      {/* ========================================================= */}
+      {phase === "boss-challenge" && (
+        <div id="quest-phase-boss-challenge" className="space-y-6">
+          <div
+            className={`border-2 rounded-3xl p-6 sm:p-8 space-y-6 relative ${
+              isDark
+                ? "bg-[#18181B] border-[#3F3F46] text-zinc-100 shadow-xl"
+                : "bg-[#FFFDF9] border-[#1E1B18] shadow-[5px_5px_0px_#1E1B18] text-[#1E1B18]"
+            }`}
+          >
+            {/* Boss Banner */}
+            <div
+              className={`p-4 rounded-2xl border-2 flex flex-col sm:flex-row sm:items-center justify-between gap-3 ${
+                isDark
+                  ? "bg-gradient-to-r from-red-950/40 to-amber-950/30 border-red-500/40 text-red-200"
+                  : "bg-[#FFF1F2] border-[#E11D48] text-[#1E1B18] shadow-[2px_2px_0px_#E11D48]"
+              }`}
+            >
+              <div className="flex items-center gap-3">
+                <div className="w-12 h-12 rounded-2xl bg-red-500 text-white flex items-center justify-center text-2xl shrink-0 shadow-md border-2 border-current">
+                  {bossChallengeData.bossAvatar || "⚔️"}
+                </div>
+                <div>
+                  <div className="text-[10px] font-mono font-black uppercase tracking-widest text-red-600 dark:text-red-400">
+                    Step 3: Final Boss Encounter
+                  </div>
+                  <h3 className="text-base sm:text-lg font-black uppercase">
+                    {bossChallengeData.title}
+                  </h3>
+                </div>
+              </div>
+              {bossChallengeData.bossQuote && (
+                <div className="text-xs italic font-serif opacity-80 sm:text-right">
+                  {bossChallengeData.bossQuote}
+                </div>
+              )}
+            </div>
+
+            {/* Scenario Card */}
+            <div
+              className={`p-4 rounded-2xl border-2 text-xs sm:text-sm leading-relaxed space-y-1 ${
+                isDark
+                  ? "bg-[#27272A] border-[#3F3F46] text-zinc-300"
+                  : "bg-white border-[#1E1B18] text-zinc-800 shadow-[2px_2px_0px_#1E1B18]"
+              }`}
+            >
+              <span className="font-mono font-black uppercase tracking-wider text-[10px] text-amber-500 block">
+                The Real-World Scenario:
+              </span>
+              <p className="font-medium">{bossChallengeData.scenario}</p>
+            </div>
+
+            {/* The Boss Question */}
+            <div className="space-y-2">
+              <h2 className="text-lg sm:text-xl font-black uppercase tracking-tight">
+                {bossChallengeData.question}
+              </h2>
+            </div>
+
+            {/* Options */}
+            <div className="space-y-3">
+              {bossChallengeData.options.map((opt) => {
+                const isSelected = selectedBossOption === opt.id;
+                const showFeedback = bossSubmitted;
+
+                let cardStyle = isDark
+                  ? "bg-[#27272A] border-[#3F3F46] text-zinc-200 hover:border-zinc-500"
+                  : "bg-white border-[#1E1B18] text-[#1E1B18] hover:bg-zinc-50 shadow-[2px_2px_0px_#1E1B18]";
+
+                if (isSelected && !showFeedback) {
+                  cardStyle = isDark
+                    ? "bg-amber-400/20 border-amber-400 text-amber-200"
+                    : "bg-[#EEF2FF] border-[#4F46E5] text-[#1E1B18] shadow-[3px_3px_0px_#1E1B18]";
+                } else if (showFeedback) {
+                  if (opt.isCorrect) {
+                    cardStyle = isDark
+                      ? "bg-emerald-950/60 border-emerald-500 text-emerald-200 shadow-md"
+                      : "bg-[#ECFDF5] border-emerald-700 text-emerald-950 shadow-[3px_3px_0px_#047857]";
+                  } else if (isSelected && !opt.isCorrect) {
+                    cardStyle = isDark
+                      ? "bg-rose-950/60 border-rose-500 text-rose-200 shadow-md"
+                      : "bg-[#FFF1F2] border-rose-700 text-rose-950 shadow-[3px_3px_0px_#BE123C]";
+                  }
+                }
+
+                return (
+                  <div
+                    key={opt.id}
+                    onClick={() => {
+                      if (!bossSubmitted) {
+                        soundFx.playTap();
+                        setSelectedBossOption(opt.id);
+                      }
+                    }}
+                    className={`p-4 rounded-2xl border-2 transition-all cursor-pointer ${cardStyle}`}
+                  >
+                    <div className="flex items-start gap-3">
+                      <div
+                        className={`w-6 h-6 rounded-full border-2 flex items-center justify-center shrink-0 mt-0.5 text-xs font-black font-mono ${
+                          isSelected
+                            ? isDark
+                              ? "border-amber-400 bg-amber-400 text-zinc-950"
+                              : "border-[#1E1B18] bg-[#4F46E5] text-white"
+                            : isDark
+                            ? "border-zinc-600"
+                            : "border-[#1E1B18]"
+                        }`}
+                      >
+                        {isSelected ? "✓" : ""}
+                      </div>
+                      <div className="space-y-1.5 text-xs sm:text-sm leading-relaxed font-bold flex-1">
+                        <div>{opt.text}</div>
+                        {showFeedback && (isSelected || opt.isCorrect) && (
+                          <div
+                            className={`p-2.5 rounded-xl border text-xs font-mono font-medium ${
+                              opt.isCorrect
+                                ? isDark
+                                  ? "bg-emerald-900/30 border-emerald-700/50 text-emerald-300"
+                                  : "bg-emerald-100/70 border-emerald-300 text-emerald-900"
+                                : isDark
+                                ? "bg-rose-900/30 border-rose-700/50 text-rose-300"
+                                : "bg-rose-100/70 border-rose-300 text-rose-900"
+                            }`}
+                          >
+                            {opt.explanation}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* Boss Defeated Takeaway Banner */}
+            {bossSubmitted && (
+              <div className="space-y-3 animate-fade-in">
+                <div
+                  className={`p-4 rounded-2xl border-2 flex items-center gap-3 ${
+                    isBossCorrect
+                      ? isDark
+                        ? "bg-emerald-950/50 border-emerald-500 text-emerald-200"
+                        : "bg-[#DCFCE7] border-emerald-700 text-emerald-950 shadow-[2px_2px_0px_#047857]"
+                      : isDark
+                      ? "bg-rose-950/50 border-rose-500 text-rose-200"
+                      : "bg-[#FFE4E6] border-rose-700 text-rose-950 shadow-[2px_2px_0px_#BE123C]"
+                  }`}
+                >
+                  <div className="text-2xl">{isBossCorrect ? "🏆" : "🛡️"}</div>
+                  <div className="flex-1">
+                    <div className="font-black text-sm uppercase tracking-wide">
+                      {isBossCorrect ? bossPraise : "The Boss parried your move!"}
+                    </div>
+                    <div className="text-xs font-medium opacity-90 mt-0.5">
+                      {isBossCorrect
+                        ? bossChallengeData.victoryMessage
+                        : "Review the logic and try an alternate strategy."}
+                    </div>
+                  </div>
+                  {!isBossCorrect && (
+                    <button
+                      onClick={() => {
+                        soundFx.playTap();
+                        setBossSubmitted(false);
+                        setSelectedBossOption(null);
+                      }}
+                      className="px-3 py-1.5 rounded-xl border-2 text-xs font-mono font-black uppercase bg-white dark:bg-zinc-800 text-current hover:opacity-80"
+                    >
+                      Retry Challenge
+                    </button>
+                  )}
+                </div>
+
+                {/* Deep Dive Note */}
+                <div
+                  className={`p-4 border-2 rounded-2xl space-y-1 ${
+                    isDark
+                      ? "bg-[#27272A] border-[#3F3F46]"
+                      : "bg-[#FEF08A]/60 border-[#1E1B18] shadow-[2px_2px_0px_#1E1B18]"
+                  }`}
+                >
+                  <span
+                    className={`text-[11px] font-mono uppercase font-black ${
+                      isDark ? "text-amber-400" : "text-[#4F46E5]"
+                    }`}
+                  >
+                    Engineering Deep Dive Takeaway:
+                  </span>
+                  <p className={`text-xs leading-relaxed font-medium ${isDark ? "text-zinc-300" : "text-zinc-800"}`}>
+                    {bossChallengeData.deepDiveExplanation}
+                  </p>
+                </div>
+              </div>
+            )}
+
+            {/* Bottom Actions */}
+            <div className="flex items-center justify-between pt-2">
+              <button
+                onClick={() => {
+                  soundFx.playTap();
+                  setPhase("concept-check");
+                }}
+                className={`px-4 py-2.5 rounded-xl border-2 text-xs font-mono font-black uppercase transition-all ${
+                  isDark
+                    ? "border-[#3F3F46] text-zinc-400 hover:text-zinc-100 bg-[#27272A]"
+                    : "border-[#1E1B18] text-[#1E1B18] bg-white hover:bg-zinc-100 shadow-[2px_2px_0px_#1E1B18]"
+                }`}
+              >
+                ← Concept Check
+              </button>
+
+              {!bossSubmitted ? (
+                <button
+                  id="submit-boss-challenge-btn"
+                  onClick={handleBossSubmit}
+                  disabled={!selectedBossOption}
+                  className={`px-6 py-2.5 rounded-xl font-black text-xs uppercase tracking-wider transition-transform active:scale-95 disabled:opacity-40 ${
+                    isDark
+                      ? "bg-amber-400 text-zinc-950 hover:bg-amber-300 shadow-md"
+                      : "bg-[#1E1B18] text-white hover:bg-black border-2 border-[#1E1B18] shadow-[3px_3px_0px_#1E1B18]"
+                  }`}
+                >
+                  Execute Battle Strategy ⚔️
+                </button>
+              ) : (
+                <button
+                  id="claim-quest-reward-btn"
+                  onClick={handleNextPhase}
+                  className={`px-6 py-2.5 rounded-xl font-black text-xs uppercase tracking-wider flex items-center gap-2 transition-transform active:scale-95 ${
+                    isDark
+                      ? "bg-emerald-500 text-zinc-950 hover:bg-emerald-400 shadow-md"
+                      : "bg-[#059669] text-white hover:bg-emerald-700 border-2 border-[#1E1B18] shadow-[3px_3px_0px_#1E1B18]"
+                  }`}
+                >
+                  <span>Claim XP & Victory! 🌟</span>
+                  <Award className="w-4 h-4" />
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ========================================================= */}
+      {/* STEP 4: REWARD & VICTORY SCREEN */}
+      {/* ========================================================= */}
       {phase === "reward" && (
         <div
           id="quest-phase-reward"
-          className={`border-2 rounded-3xl p-8 text-center space-y-6 ${
+          className={`border-2 rounded-3xl p-8 text-center space-y-6 animate-scale-in ${
             isDark
               ? "bg-[#18181B] border-[#3F3F46] text-zinc-100 shadow-2xl"
               : "bg-[#FFFDF9] border-[#1E1B18] shadow-[5px_5px_0px_#1E1B18] text-[#1E1B18]"
           }`}
         >
           <div
-            className={`w-16 h-16 rounded-3xl border-2 flex items-center justify-center mx-auto shadow-md ${
+            className={`w-20 h-20 rounded-3xl border-2 flex items-center justify-center mx-auto shadow-md animate-bounce ${
               isDark
                 ? "bg-amber-400/20 border-amber-400 text-amber-300"
                 : "bg-[#FEF08A] border-[#1E1B18] text-[#1E1B18]"
             }`}
           >
-            <Award className="w-8 h-8" />
+            <Award className="w-10 h-10 stroke-[2.5]" />
           </div>
 
           <div className="space-y-1">
@@ -710,12 +982,11 @@ export const QuestView: React.FC<QuestViewProps> = ({
             >
               Mission Accomplished
             </span>
-            <h2 className="text-2xl font-black uppercase tracking-tight">
-              Quest Completed!
+            <h2 className="text-2xl sm:text-3xl font-black uppercase tracking-tight">
+              Quest Mastered! 🚀
             </h2>
-            <p className={`text-sm max-w-md mx-auto ${isDark ? "text-zinc-300" : "text-zinc-700"}`}>
-              You mastered <span className="font-black uppercase">{quest.title}</span> and proved
-              your conceptual mastery.
+            <p className={`text-sm max-w-md mx-auto font-medium ${isDark ? "text-zinc-300" : "text-zinc-700"}`}>
+              You successfully mastered <span className="font-black uppercase">{quest.title}</span> through the pure Q&A learning journey!
             </p>
           </div>
 
@@ -730,7 +1001,7 @@ export const QuestView: React.FC<QuestViewProps> = ({
               <div className={`text-[11px] font-mono font-bold ${isDark ? "text-zinc-400" : "text-zinc-600"}`}>
                 XP Awarded
               </div>
-              <div className="text-lg font-black font-mono text-amber-500">+{quest.xpReward} XP</div>
+              <div className="text-xl font-black font-mono text-amber-500">+{quest.xpReward} XP</div>
             </div>
             <div
               className={`border-2 p-3.5 rounded-2xl ${
@@ -740,7 +1011,7 @@ export const QuestView: React.FC<QuestViewProps> = ({
               }`}
             >
               <div className={`text-[11px] font-mono font-bold ${isDark ? "text-zinc-400" : "text-zinc-600"}`}>
-                Skill Advanced
+                Skill Unlocked
               </div>
               <div className="text-sm font-black truncate">{quest.skillTag}</div>
             </div>
@@ -752,7 +1023,7 @@ export const QuestView: React.FC<QuestViewProps> = ({
               }`}
             >
               <div className={`text-[11px] font-mono font-bold ${isDark ? "text-zinc-400" : "text-zinc-600"}`}>
-                Badge Unlocked
+                Badge Earned
               </div>
               <div className="text-sm font-black truncate text-emerald-600 dark:text-emerald-400">
                 {quest.badgeTitle || "Mastery"}
