@@ -51,11 +51,11 @@ export const Footer: React.FC = () => {
             <ul className="space-y-1.5 text-xs text-slate-400 font-sans">
               <li className="flex items-center gap-1.5">
                 <Cpu className="w-3 h-3 text-cyan-400" />
-                <span>Gemini 3.8 Flash Server API</span>
+                <span>Adaptive Pedagogical Mentor</span>
               </li>
               <li className="flex items-center gap-1.5">
                 <Shield className="w-3 h-3 text-emerald-400" />
-                <span>Supabase Ready Database</span>
+                <span>Local Storage Architecture</span>
               </li>
               <li className="flex items-center gap-1.5">
                 <Sparkles className="w-3 h-3 text-amber-400" />

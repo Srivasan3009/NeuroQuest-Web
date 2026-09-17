@@ -1,4 +1,5 @@
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
+import { motion, AnimatePresence } from "motion/react";
 import {
   Settings,
   User,
@@ -21,12 +22,24 @@ import {
   GraduationCap,
   Trophy,
   Flame,
-  Cpu
+  Cpu,
+  Database,
+  RefreshCw,
+  Server,
+  Plus,
+  Eye,
+  X,
+  Camera,
+  Upload
 } from "lucide-react";
 import { UserProfile, MascotRole, AppTheme, Stage } from "../../types";
-import { soundFx } from "../../utils/sound";
+import { audioManager, soundFx } from "../../utils/sound";
 import { Achievements } from "./Achievements";
 import { computeMilestoneBadges, getAchievementsSummary } from "../../utils/achievements";
+import { AvatarPickerModal } from "./AvatarPickerModal";
+import { FriendsFeedModal } from "../social/FriendsFeedModal";
+import { dataStore } from "../../services/storage";
+import { socialService } from "../../services/social";
 
 interface YouViewProps {
   user: UserProfile;
@@ -38,6 +51,7 @@ interface YouViewProps {
   onSetStreakDays?: (days: number) => void;
   onCompleteQuest?: (questId: string, xp: number, skill: string) => void;
   onLogOut?: () => void;
+  onUpdateUser?: (updated: UserProfile) => void;
   theme?: AppTheme;
 }
 
@@ -51,6 +65,7 @@ export const YouView: React.FC<YouViewProps> = ({
   onSetStreakDays,
   onCompleteQuest,
   onLogOut,
+  onUpdateUser,
   theme = "neumorphic"
 }) => {
   const isNeumorphic = theme === "neumorphic";
@@ -58,6 +73,24 @@ export const YouView: React.FC<YouViewProps> = ({
   const isRiso = !isDark && !isNeumorphic;
   const [inSettingsView, setInSettingsView] = useState(false);
   const [inAchievementsView, setInAchievementsView] = useState(false);
+  const [isAvatarModalOpen, setIsAvatarModalOpen] = useState(false);
+  const [pendingRequestsCount, setPendingRequestsCount] = useState(0);
+
+  useEffect(() => {
+    setPendingRequestsCount(socialService.getPendingRequestsCount());
+    const unsub = socialService.subscribe(() => {
+      setPendingRequestsCount(socialService.getPendingRequestsCount());
+    });
+    return () => unsub();
+  }, []);
+
+  const handleSaveAvatar = async (newAvatarUrl: string) => {
+    const updated: UserProfile = { ...user, avatarUrl: newAvatarUrl };
+    await dataStore.saveUserProfile(updated);
+    if (onUpdateUser) {
+      onUpdateUser(updated);
+    }
+  };
 
   // Compute live milestone badges & summary
   const milestoneBadges = useMemo(
@@ -73,7 +106,9 @@ export const YouView: React.FC<YouViewProps> = ({
   const [openAccordion, setOpenAccordion] = useState<string | null>("preferences");
 
   // Local settings toggles
-  const [soundEnabled, setSoundEnabled] = useState(soundFx.isEnabled());
+  const [soundEnabled, setSoundEnabled] = useState(audioManager.isEnabled());
+  const [soundVolume, setSoundVolume] = useState(Math.round(audioManager.getVolume() * 100));
+  const [hapticsEnabled, setHapticsEnabled] = useState(audioManager.isHapticsEnabled());
   const [voiceEnabled, setVoiceEnabled] = useState(false);
 
   // Sub-modals for Friends, Portfolio, Bookmarks, Certificates
@@ -82,12 +117,24 @@ export const YouView: React.FC<YouViewProps> = ({
   const handleToggleSound = () => {
     const next = !soundEnabled;
     setSoundEnabled(next);
-    soundFx.setEnabled(next);
-    if (next) soundFx.playTap();
+    audioManager.setEnabled(next);
+    audioManager.playToggle(next);
+  };
+
+  const handleVolumeChange = (newVal: number) => {
+    setSoundVolume(newVal);
+    audioManager.setVolume(newVal / 100);
+  };
+
+  const handleToggleHaptics = () => {
+    const next = !hapticsEnabled;
+    setHapticsEnabled(next);
+    audioManager.setHapticsEnabled(next);
+    audioManager.playTap();
   };
 
   const handleThemeChange = (newTheme: AppTheme) => {
-    soundFx.playTap();
+    audioManager.playTap();
     onSetTheme(newTheme);
   };
 
@@ -134,19 +181,27 @@ export const YouView: React.FC<YouViewProps> = ({
   // -------------------------------------------------------------
   if (inAchievementsView) {
     return (
-      <Achievements
-        user={user}
-        stages={stages}
-        onBack={() => setInAchievementsView(false)}
-        onSetStreakDays={onSetStreakDays}
-        onCompleteFoundationQuest={() => {
-          if (onCompleteQuest) {
-            onCompleteQuest("quest-1", 120, "Paradigm Modeling");
-          }
-        }}
-        onResetProgress={onResetProgress}
-        theme={theme}
-      />
+      <motion.div
+        key="achievements-section"
+        initial={{ opacity: 0, x: 24, scale: 0.99 }}
+        animate={{ opacity: 1, x: 0, scale: 1 }}
+        exit={{ opacity: 0, x: -24, scale: 0.99 }}
+        transition={{ type: "spring", stiffness: 350, damping: 28 }}
+      >
+        <Achievements
+          user={user}
+          stages={stages}
+          onBack={() => setInAchievementsView(false)}
+          onSetStreakDays={onSetStreakDays}
+          onCompleteFoundationQuest={() => {
+            if (onCompleteQuest) {
+              onCompleteQuest("quest-1", 120, "Paradigm Modeling");
+            }
+          }}
+          onResetProgress={onResetProgress}
+          theme={theme}
+        />
+      </motion.div>
     );
   }
 
@@ -155,7 +210,14 @@ export const YouView: React.FC<YouViewProps> = ({
   // -------------------------------------------------------------
   if (inSettingsView) {
     return (
-      <div id="settings-view" className="space-y-4 pb-24 max-w-lg mx-auto px-4 pt-2 animate-in fade-in">
+      <motion.div
+        key="settings-section"
+        initial={{ opacity: 0, x: 24, scale: 0.99 }}
+        animate={{ opacity: 1, x: 0, scale: 1 }}
+        exit={{ opacity: 0, x: -24, scale: 0.99 }}
+        transition={{ type: "spring", stiffness: 350, damping: 28 }}
+      >
+        <div id="settings-view" className="space-y-4 pb-24 max-w-lg mx-auto px-4 pt-2">
         {/* Settings Header matching video */}
         <div
           className={`flex items-center justify-between py-2 border-b ${
@@ -191,16 +253,46 @@ export const YouView: React.FC<YouViewProps> = ({
               : "bg-[#FFFDF9] border-2 border-[#1E1B18] text-[#1E1B18] shadow-[3px_3px_0px_#1E1B18]"
           }`}
         >
-          <div
-            className={`w-12 h-12 rounded-full flex items-center justify-center font-black text-lg ${
-              isNeumorphic
-                ? "neu-inset text-indigo-600"
-                : isDark
-                ? "bg-amber-500/20 border-2 border-amber-400 text-amber-300"
-                : "bg-[#FEF08A] border-2 border-[#1E1B18] text-[#1E1B18]"
-            }`}
-          >
-            {user.fullName ? user.fullName.charAt(0).toUpperCase() : "U"}
+          <div className="relative shrink-0">
+            <div
+              className={`w-12 h-12 rounded-full overflow-hidden flex items-center justify-center font-black text-lg ${
+                isNeumorphic
+                  ? "neu-inset text-indigo-600"
+                  : isDark
+                  ? "bg-amber-500/20 border-2 border-amber-400 text-amber-300"
+                  : "bg-[#FEF08A] border-2 border-[#1E1B18] text-[#1E1B18]"
+              }`}
+            >
+              {user.avatarUrl ? (
+                <img
+                  src={user.avatarUrl}
+                  alt={user.fullName || "Cadet"}
+                  referrerPolicy="no-referrer"
+                  crossOrigin="anonymous"
+                  className="w-full h-full object-cover"
+                />
+              ) : (
+                user.fullName ? user.fullName.charAt(0).toUpperCase() : "U"
+              )}
+            </div>
+            <button
+              type="button"
+              id="btn-settings-edit-avatar"
+              onClick={() => {
+                soundFx.playTap();
+                setIsAvatarModalOpen(true);
+              }}
+              title="Change Profile Photo"
+              className={`absolute -bottom-1 -right-1 p-1 rounded-full text-xs shadow ${
+                isDark
+                  ? "bg-amber-400 text-zinc-950"
+                  : isNeumorphic
+                  ? "bg-white text-indigo-600 border border-slate-300 shadow-sm"
+                  : "bg-[#4F46E5] text-white"
+              }`}
+            >
+              <Camera className="w-2.5 h-2.5" />
+            </button>
           </div>
           <div className="flex-1 min-w-0">
             <div className="text-sm font-black uppercase truncate">
@@ -216,6 +308,22 @@ export const YouView: React.FC<YouViewProps> = ({
               </div>
             )}
           </div>
+          <button
+            type="button"
+            onClick={() => {
+              soundFx.playTap();
+              setIsAvatarModalOpen(true);
+            }}
+            className={`px-2.5 py-1 rounded-xl text-xs font-bold transition-all ${
+              isDark
+                ? "bg-zinc-800 hover:bg-zinc-700 text-amber-400 border border-zinc-700"
+                : isNeumorphic
+                ? "neu-btn text-indigo-600 text-[11px]"
+                : "bg-white hover:bg-slate-100 text-[#1E1B18] border border-[#1E1B18]"
+            }`}
+          >
+            Photo
+          </button>
         </div>
 
         {/* Settings Accordions */}
@@ -261,20 +369,21 @@ export const YouView: React.FC<YouViewProps> = ({
                   isNeumorphic ? "border-slate-300/80" : isDark ? "border-[#3F3F46]" : "border-[#1E1B18]/30"
                 }`}
               >
-                {/* Sound & Haptics Toggle */}
+                {/* Sound Effects Master Toggle */}
                 <div className="flex items-center justify-between pt-3">
                   <div className="flex items-center gap-2.5">
-                    <Volume2 className={`w-4 h-4 ${isNeumorphic ? "text-indigo-600" : isDark ? "text-zinc-400" : "text-zinc-600"}`} />
+                    <Volume2 className={`w-4 h-4 ${isNeumorphic ? "text-indigo-600" : isDark ? "text-amber-400" : "text-[#4F46E5]"}`} />
                     <div>
                       <div className={`font-bold ${isNeumorphic ? "text-slate-800" : isDark ? "text-zinc-200" : "text-[#1E1B18]"}`}>
-                        Sound & haptics
+                        UI Sound Effects
                       </div>
                       <div className={`text-[11px] ${isNeumorphic ? "text-slate-500" : isDark ? "text-zinc-400" : "text-zinc-500"}`}>
-                        Beeps and buzzes in lessons
+                        Tactile clicks, level up & quest audio
                       </div>
                     </div>
                   </div>
                   <button
+                    id="btn-toggle-sound-fx"
                     onClick={handleToggleSound}
                     className={`px-3 py-1 rounded-full font-mono font-black text-xs transition-all ${
                       soundEnabled
@@ -291,6 +400,139 @@ export const YouView: React.FC<YouViewProps> = ({
                     }`}
                   >
                     {soundEnabled ? "ON" : "OFF"}
+                  </button>
+                </div>
+
+                {/* Volume Slider */}
+                {soundEnabled && (
+                  <div className="pt-1 pb-1 space-y-1.5">
+                    <div className="flex items-center justify-between text-[11px] font-mono">
+                      <span className={isNeumorphic ? "text-slate-600 font-bold" : isDark ? "text-zinc-300" : "text-zinc-700 font-bold"}>
+                        Effect Volume
+                      </span>
+                      <span className={`font-bold ${isNeumorphic ? "text-indigo-600" : isDark ? "text-amber-400" : "text-[#4F46E5]"}`}>
+                        {soundVolume}%
+                      </span>
+                    </div>
+                    <input
+                      id="input-audio-volume-slider"
+                      type="range"
+                      min="0"
+                      max="100"
+                      value={soundVolume}
+                      onChange={(e) => handleVolumeChange(Number(e.target.value))}
+                      className="w-full h-1.5 bg-slate-200 dark:bg-zinc-700 rounded-lg appearance-none cursor-pointer accent-indigo-600 dark:accent-amber-400"
+                    />
+                  </div>
+                )}
+
+                {/* Sound Effects Preview Pill Box */}
+                {soundEnabled && (
+                  <div className="space-y-1.5">
+                    <div className={`text-[10px] font-mono uppercase font-bold ${isNeumorphic ? "text-slate-500" : isDark ? "text-zinc-400" : "text-zinc-500"}`}>
+                      Sound Effect Preview:
+                    </div>
+                    <div className="flex items-center gap-1.5 flex-wrap">
+                      <button
+                        type="button"
+                        onClick={() => audioManager.playClick()}
+                        className={`px-2 py-1 rounded-lg text-[10px] font-mono font-bold transition-all ${
+                          isNeumorphic
+                            ? "neu-raised text-slate-700 hover:text-indigo-600"
+                            : isDark
+                            ? "bg-zinc-800 border border-zinc-700 text-zinc-300 hover:text-white"
+                            : "bg-white border border-[#1E1B18] text-[#1E1B18] shadow-sm"
+                        }`}
+                      >
+                        🎵 Click
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => audioManager.playSpark()}
+                        className={`px-2 py-1 rounded-lg text-[10px] font-mono font-bold transition-all ${
+                          isNeumorphic
+                            ? "neu-raised text-amber-600 hover:text-amber-700"
+                            : isDark
+                            ? "bg-zinc-800 border border-zinc-700 text-amber-400 hover:text-amber-300"
+                            : "bg-white border border-[#1E1B18] text-[#1E1B18] shadow-sm"
+                        }`}
+                      >
+                        ⚡ Spark
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => audioManager.playCorrect()}
+                        className={`px-2 py-1 rounded-lg text-[10px] font-mono font-bold transition-all ${
+                          isNeumorphic
+                            ? "neu-raised text-emerald-600 hover:text-emerald-700"
+                            : isDark
+                            ? "bg-zinc-800 border border-zinc-700 text-emerald-400 hover:text-emerald-300"
+                            : "bg-white border border-[#1E1B18] text-[#1E1B18] shadow-sm"
+                        }`}
+                      >
+                        ✨ Correct
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => audioManager.playQuestComplete()}
+                        className={`px-2 py-1 rounded-lg text-[10px] font-mono font-bold transition-all ${
+                          isNeumorphic
+                            ? "neu-raised text-indigo-600 hover:text-indigo-700"
+                            : isDark
+                            ? "bg-zinc-800 border border-zinc-700 text-cyan-400 hover:text-cyan-300"
+                            : "bg-white border border-[#1E1B18] text-[#1E1B18] shadow-sm"
+                        }`}
+                      >
+                        🏆 Quest
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => audioManager.playLevelUp()}
+                        className={`px-2 py-1 rounded-lg text-[10px] font-mono font-black transition-all ${
+                          isNeumorphic
+                            ? "neu-pill-accent text-amber-600"
+                            : isDark
+                            ? "bg-amber-400/20 border border-amber-400 text-amber-300"
+                            : "bg-[#FEF08A] border border-[#1E1B18] text-[#1E1B18]"
+                        }`}
+                      >
+                        👑 Level Up
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                {/* Tactile Haptics Toggle */}
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2.5">
+                    <Sparkles className={`w-4 h-4 ${isNeumorphic ? "text-indigo-600" : isDark ? "text-zinc-400" : "text-zinc-600"}`} />
+                    <div>
+                      <div className={`font-bold ${isNeumorphic ? "text-slate-800" : isDark ? "text-zinc-200" : "text-[#1E1B18]"}`}>
+                        Micro-Haptics
+                      </div>
+                      <div className={`text-[11px] ${isNeumorphic ? "text-slate-500" : isDark ? "text-zinc-400" : "text-zinc-500"}`}>
+                        Vibration feedback on tap & success
+                      </div>
+                    </div>
+                  </div>
+                  <button
+                    id="btn-toggle-haptics"
+                    onClick={handleToggleHaptics}
+                    className={`px-3 py-1 rounded-full font-mono font-black text-xs transition-all ${
+                      hapticsEnabled
+                        ? isNeumorphic
+                          ? "neu-btn-primary text-white"
+                          : isDark
+                          ? "bg-amber-400 text-zinc-950 border border-amber-500"
+                          : "bg-[#4F46E5] text-white border border-[#1E1B18]"
+                        : isNeumorphic
+                        ? "neu-inset text-slate-500"
+                        : isDark
+                        ? "bg-zinc-800 text-zinc-400 border border-zinc-700"
+                        : "bg-zinc-200 text-zinc-600 border border-zinc-300"
+                    }`}
+                  >
+                    {hapticsEnabled ? "ON" : "OFF"}
                   </button>
                 </div>
 
@@ -490,35 +732,70 @@ export const YouView: React.FC<YouViewProps> = ({
                 <div className="flex items-center gap-2 py-1">
                   <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
                   <span className={`font-mono text-[11px] font-bold ${isDark ? "text-emerald-400" : "text-emerald-700"}`}>
-                    Firebase Firestore & Auth Active
+                    Local Storage Persistence Active
                   </span>
                 </div>
                 <div className={isDark ? "text-zinc-400 text-[11px]" : "text-zinc-600 text-[11px]"}>
-                  Your learning profile, XP, and streak are backed up and synced to cloud storage in real time.
+                  Your learning profile, XP, achievements, and streak are safely persisted in your browser's local storage with zero external server dependencies.
                 </div>
-                <button
-                  onClick={() => {
-                    if (confirm("Reset learning progress and sparks?")) {
-                      onResetProgress();
-                    }
-                  }}
-                  className="px-3 py-1.5 rounded-lg bg-rose-500 text-white font-black text-xs shadow-sm"
-                >
-                  Reset Progress
-                </button>
+
+                {/* Profile Photo Manager row */}
+                <div className="pt-2 border-t border-zinc-200 dark:border-zinc-800 flex justify-between items-center">
+                  <div>
+                    <div className={`font-bold text-xs ${isDark ? "text-zinc-200" : "text-slate-800"}`}>Profile Picture</div>
+                    <div className="text-[10px] opacity-60">Upload or change your profile picture</div>
+                  </div>
+                  <button
+                    type="button"
+                    id="btn-settings-manage-avatar"
+                    onClick={() => {
+                      soundFx.playTap();
+                      setIsAvatarModalOpen(true);
+                    }}
+                    className={`px-3 py-1.5 rounded-xl font-bold text-xs flex items-center gap-1.5 transition-all ${
+                      isDark
+                        ? "bg-zinc-800 hover:bg-zinc-700 text-amber-300 border border-zinc-700"
+                        : "bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200"
+                    }`}
+                  >
+                    <Camera className="w-3.5 h-3.5" />
+                    <span>Manage Photo</span>
+                  </button>
+                </div>
+
+                <div className="pt-2 border-t border-zinc-200 dark:border-zinc-800 flex justify-between items-center">
+                  <button
+                    onClick={() => {
+                      if (confirm("Reset learning progress and sparks?")) {
+                        onResetProgress();
+                      }
+                    }}
+                    className="px-2.5 py-1 rounded-lg bg-rose-500/10 hover:bg-rose-500/20 text-rose-600 dark:text-rose-400 font-bold text-[11px] border border-rose-500/30 transition-colors"
+                  >
+                    Reset Local Progress
+                  </button>
+                </div>
               </div>
             )}
           </div>
         </div>
       </div>
-    );
-  }
+    </motion.div>
+  );
+}
 
   // -------------------------------------------------------------
   // MAIN YOU / PROFILE VIEW matching video
   // -------------------------------------------------------------
   return (
-    <div id="you-view" className="space-y-6 pb-24 max-w-lg mx-auto px-4 pt-2">
+    <motion.div
+      key="main-profile-section"
+      initial={{ opacity: 0, x: -20, scale: 0.99 }}
+      animate={{ opacity: 1, x: 0, scale: 1 }}
+      exit={{ opacity: 0, x: 20, scale: 0.99 }}
+      transition={{ type: "spring", stiffness: 350, damping: 28 }}
+    >
+      <div id="you-view" className="space-y-6 pb-24 max-w-lg mx-auto px-4 pt-2">
       {/* 1. Header matching video */}
       <div className="flex items-center justify-between">
         <div>
@@ -541,28 +818,31 @@ export const YouView: React.FC<YouViewProps> = ({
           </div>
         </div>
 
-        {/* Settings Gear Button */}
-        <button
-          id="btn-open-settings"
-          onClick={() => {
-            soundFx.playTap();
-            setInSettingsView(true);
-          }}
-          className={`p-2.5 rounded-2xl transition-transform active:scale-95 ${
-            isNeumorphic
-              ? "neu-btn text-slate-700 hover:text-indigo-600"
-              : isDark
-              ? "bg-[#27272A] border-2 border-[#3F3F46] text-zinc-300 hover:text-amber-400"
-              : "bg-[#FFFDF9] border-2 border-[#1E1B18] text-[#1E1B18] shadow-[2px_2px_0px_#1E1B18]"
-          }`}
-        >
-          <Settings className="w-5 h-5" />
-        </button>
+        {/* Top Header Action Buttons */}
+        <div className="flex items-center gap-2">
+          {/* Settings Gear Button */}
+          <button
+            id="btn-open-settings"
+            onClick={() => {
+              soundFx.playTap();
+              setInSettingsView(true);
+            }}
+            className={`p-2.5 rounded-2xl transition-transform active:scale-95 ${
+              isNeumorphic
+                ? "neu-btn text-slate-700 hover:text-indigo-600"
+                : isDark
+                ? "bg-[#27272A] border-2 border-[#3F3F46] text-zinc-300 hover:text-amber-400"
+                : "bg-[#FFFDF9] border-2 border-[#1E1B18] text-[#1E1B18] shadow-[2px_2px_0px_#1E1B18]"
+            }`}
+          >
+            <Settings className="w-5 h-5" />
+          </button>
+        </div>
       </div>
 
       {/* 2. Big Profile Card matching video */}
       <div
-        className={`p-6 rounded-3xl text-center space-y-3 transition-all ${
+        className={`p-6 rounded-3xl text-center space-y-3.5 transition-all ${
           isNeumorphic
             ? "neu-raised text-slate-800"
             : isDark
@@ -572,18 +852,55 @@ export const YouView: React.FC<YouViewProps> = ({
       >
         <div className="relative inline-block">
           <div
-            className={`w-20 h-20 mx-auto rounded-full flex items-center justify-center text-3xl font-black ${
+            className={`w-24 h-24 mx-auto rounded-full relative overflow-hidden flex items-center justify-center transition-all ${
               isNeumorphic
-                ? "neu-inset text-indigo-600 font-black"
+                ? "neu-inset"
                 : isDark
-                ? "bg-amber-500/10 border-4 border-amber-400/80 text-amber-400"
-                : "bg-[#FEF08A] border-4 border-[#1E1B18] text-[#1E1B18] shadow-[2px_2px_0px_#1E1B18]"
+                ? "bg-amber-500/10 border-4 border-amber-400/80 shadow-[0_0_20px_rgba(251,191,36,0.2)]"
+                : "bg-[#FEF08A] border-4 border-[#1E1B18] shadow-[3px_3px_0px_#1E1B18]"
             }`}
           >
-            {user.fullName ? user.fullName.charAt(0).toUpperCase() : "U"}
+            {user.avatarUrl ? (
+              <img
+                src={user.avatarUrl}
+                alt={user.fullName || "Cadet"}
+                referrerPolicy="no-referrer"
+                crossOrigin="anonymous"
+                className="w-full h-full object-cover rounded-full"
+              />
+            ) : (
+              <span
+                className={`text-3xl font-black ${
+                  isNeumorphic ? "text-indigo-600 font-black" : isDark ? "text-amber-400" : "text-[#1E1B18]"
+                }`}
+              >
+                {user.fullName ? user.fullName.charAt(0).toUpperCase() : "U"}
+              </span>
+            )}
           </div>
+
+          {/* Edit Avatar Camera Button */}
+          <button
+            type="button"
+            id="btn-edit-avatar"
+            onClick={() => {
+              soundFx.playTap();
+              setIsAvatarModalOpen(true);
+            }}
+            title="Upload photo or change profile picture"
+            className={`absolute bottom-0 right-0 p-2 rounded-full font-bold transition-transform active:scale-95 shadow-md flex items-center justify-center ${
+              isNeumorphic
+                ? "neu-btn text-indigo-600 hover:text-indigo-700 bg-white"
+                : isDark
+                ? "bg-amber-400 text-zinc-950 hover:bg-amber-300 border border-amber-500"
+                : "bg-[#4F46E5] text-white hover:bg-indigo-700 border-2 border-[#1E1B18]"
+            }`}
+          >
+            <Camera className="w-3.5 h-3.5" />
+          </button>
+
           <span
-            className={`absolute -bottom-1 left-1/2 -translate-x-1/2 text-[9px] font-mono font-black px-2 py-0.5 rounded-full uppercase ${
+            className={`absolute -bottom-2.5 left-1/2 -translate-x-1/2 text-[9px] font-mono font-black px-2 py-0.5 rounded-full uppercase whitespace-nowrap ${
               isNeumorphic
                 ? "neu-pill-accent text-amber-600"
                 : isDark
@@ -595,7 +912,7 @@ export const YouView: React.FC<YouViewProps> = ({
           </span>
         </div>
 
-        <div className="space-y-1">
+        <div className="space-y-1 pt-1">
           <h2 className="text-xl font-black uppercase tracking-tight">
             {user.fullName || "CADET"}
           </h2>
@@ -617,6 +934,28 @@ export const YouView: React.FC<YouViewProps> = ({
               {user.email}
             </p>
           )}
+
+          {/* Quick Avatar Change Link */}
+          <div className="pt-2 flex items-center justify-center">
+            <button
+              type="button"
+              id="btn-quick-change-photo"
+              onClick={() => {
+                soundFx.playTap();
+                setIsAvatarModalOpen(true);
+              }}
+              className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold transition-all ${
+                isDark
+                  ? "bg-zinc-800/80 hover:bg-zinc-800 text-amber-400 border border-zinc-700"
+                  : isNeumorphic
+                  ? "neu-pill text-indigo-600 hover:text-indigo-700"
+                  : "bg-slate-100 hover:bg-slate-200 text-[#1E1B18] border border-slate-300"
+              }`}
+            >
+              <Camera className="w-3 h-3" />
+              <span>{user.avatarUrl ? "Change Photo" : "Upload Photo"}</span>
+            </button>
+          </div>
         </div>
       </div>
 
@@ -685,7 +1024,7 @@ export const YouView: React.FC<YouViewProps> = ({
         >
           <div className="flex items-center gap-3.5">
             <div
-              className={`w-10 h-10 rounded-xl flex items-center justify-center ${
+              className={`w-10 h-10 rounded-xl flex items-center justify-center relative ${
                 isNeumorphic
                   ? "neu-inset text-indigo-600"
                   : isDark
@@ -694,11 +1033,21 @@ export const YouView: React.FC<YouViewProps> = ({
               }`}
             >
               <Users className="w-5 h-5" />
+              {pendingRequestsCount > 0 && (
+                <span className="absolute -top-1 -right-1 w-3 h-3 rounded-full bg-amber-500 border-2 border-white dark:border-[#27272A] animate-pulse" />
+              )}
             </div>
             <div>
-              <div className="text-xs font-black uppercase">FRIENDS</div>
+              <div className="text-xs font-black uppercase flex items-center gap-2">
+                <span>FRIENDS & STUDY SQUAD</span>
+                {pendingRequestsCount > 0 && (
+                  <span className="text-[9px] font-mono px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-400 border border-amber-500/40 font-bold">
+                    {pendingRequestsCount} NEW REQUEST{pendingRequestsCount > 1 ? "S" : ""}
+                  </span>
+                )}
+              </div>
               <div className={`text-[11px] ${isNeumorphic ? "text-slate-500" : isDark ? "text-zinc-400" : "text-zinc-600"}`}>
-                Add @handle • challenge • invite
+                Add @handle • review requests • study squad
               </div>
             </div>
           </div>
@@ -933,8 +1282,8 @@ export const YouView: React.FC<YouViewProps> = ({
         </div>
       </div>
 
-      {/* Sub-modals for Friends/Portfolio */}
-      {activeSubModal && (
+      {/* Sub-modals for Portfolio / Bookmarks / Certificates */}
+      {activeSubModal && activeSubModal !== "friends" && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in">
           <div
             className={`w-full max-w-md rounded-3xl p-6 space-y-4 ${
@@ -947,7 +1296,6 @@ export const YouView: React.FC<YouViewProps> = ({
           >
             <h3 className="text-base font-black uppercase">{activeSubModal}</h3>
             <p className={`text-xs ${isNeumorphic ? "text-slate-600" : isDark ? "text-zinc-300" : "text-zinc-700"}`}>
-              {activeSubModal === "friends" && "Connect with colleagues, trade AI prompts, and challenge peers in the Lab."}
               {activeSubModal === "portfolio" && "All your synthesized prompt templates and solved challenge code are archived here."}
               {activeSubModal === "bookmarks" && "Review saved lessons and interactive playground widgets."}
               {activeSubModal === "certificates" && "Complete all 6 core stages to earn your verified Neural Architect certificate."}
@@ -967,6 +1315,23 @@ export const YouView: React.FC<YouViewProps> = ({
           </div>
         </div>
       )}
+
+      {/* Full Real-Time Social & Friends Feed Modal */}
+      <FriendsFeedModal
+        isOpen={activeSubModal === "friends"}
+        onClose={() => setActiveSubModal(null)}
+        user={user}
+        theme={theme}
+      />
+      {/* Avatar Picker Modal */}
+      <AvatarPickerModal
+        isOpen={isAvatarModalOpen}
+        onClose={() => setIsAvatarModalOpen(false)}
+        user={user}
+        onSaveAvatar={handleSaveAvatar}
+        theme={theme}
+      />
     </div>
+    </motion.div>
   );
 };

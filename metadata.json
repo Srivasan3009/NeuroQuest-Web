@@ -1,6 +1,8 @@
 {
-  "name": "NeuroQuest",
-  "description": "Interactive AI learning platform guiding students from foundations to autonomous agents with hands-on quests and AI tutoring.",
+  "name": "NeuroQuest AI Academy",
+  "description": "Gamified interactive AI & Machine Learning learning OS with neural network visualizers, curriculum paths, real Supabase auth, and cadet ranking systems.",
   "requestFramePermissions": [],
-  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
 }

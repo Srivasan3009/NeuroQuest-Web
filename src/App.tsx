@@ -18,8 +18,58 @@ import { StreakModal } from "./components/modals/StreakModal";
 import { DailyGiftModal } from "./components/modals/DailyGiftModal";
 import { ParticleBackground } from "./components/layout/ParticleBackground";
 import { AuthStarterView } from "./components/auth/AuthStarterView";
+import { OAuthCallbackHandler } from "./components/auth/OAuthCallbackHandler";
 import { motion, AnimatePresence } from "motion/react";
-import { soundFx } from "./utils/sound";
+import { audioManager, soundFx } from "./utils/sound";
+
+const isOAuthCallbackWindow = () => {
+  try {
+    const hash = window.location.hash || "";
+    const search = window.location.search || "";
+    const isNamedOAuth = window.name === "supabase_google_oauth";
+    const hasOAuthHash = hash.includes("access_token=") || hash.includes("error=");
+    const hasOAuthQuery = search.includes("code=") || (search.includes("error=") && Boolean(window.opener));
+    return isNamedOAuth || hasOAuthHash || hasOAuthQuery;
+  } catch {
+    return false;
+  }
+};
+
+const TAB_INDICES: Record<string, number> = {
+  home: 0,
+  lab: 1,
+  league: 2,
+  you: 3,
+  quest: 4,
+};
+
+const sectionVariants = {
+  initial: (direction: number) => ({
+    opacity: 0,
+    x: direction > 0 ? 32 : -32,
+    scale: 0.99,
+  }),
+  animate: {
+    opacity: 1,
+    x: 0,
+    scale: 1,
+    transition: {
+      type: "spring",
+      stiffness: 350,
+      damping: 28,
+      mass: 0.75,
+    },
+  },
+  exit: (direction: number) => ({
+    opacity: 0,
+    x: direction > 0 ? -32 : 32,
+    scale: 0.99,
+    transition: {
+      duration: 0.18,
+      ease: [0.22, 1, 0.36, 1],
+    },
+  }),
+};
 
 export default function App() {
   const [stages] = useState<Stage[]>(STAGES_CURRICULUM);
@@ -38,7 +88,16 @@ export default function App() {
     }
   });
   const [currentTab, setCurrentTab] = useState<NavTab | "quest">("home");
+  const [tabDirection, setTabDirection] = useState(1);
   const [activeQuest, setActiveQuest] = useState<{ quest: Quest; stage: Stage } | null>(null);
+
+  const switchTab = (nextTab: NavTab | "quest") => {
+    const currentIdx = TAB_INDICES[currentTab] ?? 0;
+    const nextIdx = TAB_INDICES[nextTab] ?? 0;
+    setTabDirection(nextIdx >= currentIdx ? 1 : -1);
+    setCurrentTab(nextTab);
+    audioManager.playTabSwitch();
+  };
 
   // Modals
   const [isCoursePickerOpen, setIsCoursePickerOpen] = useState(false);
@@ -53,46 +112,80 @@ export default function App() {
     phase: "Learn",
   });
 
-  // Load user profile on startup
+  // Load user profile on startup and subscribe to auth state changes
   useEffect(() => {
     async function loadData() {
       const profile = await dataStore.getUserProfile();
       setUser(profile);
     }
     loadData();
+
+    const unsubscribe = authService.onAuthStateChanged((authUser) => {
+      if (authUser) {
+        setUser(authUser);
+        setIsLoggedIn(true);
+      }
+    });
+
+    return () => {
+      unsubscribe();
+    };
   }, []);
 
   const handleSelectQuest = (quest: Quest, stage: Stage) => {
+    audioManager.playTap();
     setActiveQuest({ quest, stage });
     setTutorContext({
       questTitle: quest.title,
       stageTitle: stage.title,
       phase: "Learn",
     });
-    setCurrentTab("quest");
+    switchTab("quest");
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
   const handleCompleteQuest = async (questId: string, xpReward: number, skillTag: string) => {
+    const prevLevel = user?.level || 1;
     const updated = await dataStore.completeQuest(questId, xpReward, skillTag);
     // Also award +10 sparks on completion!
     const withSparks = await dataStore.addSparks(10);
     setUser(withSparks);
+
+    if (withSparks.level > prevLevel) {
+      audioManager.playLevelUp();
+    } else {
+      audioManager.playQuestComplete();
+    }
   };
 
   const handleClaimChest = async (chestId: string, rewardSparks: number, rewardXP: number) => {
+    const prevLevel = user?.level || 1;
     const updated = await dataStore.claimChest(chestId, rewardSparks, rewardXP);
     setUser(updated);
+
+    if (updated.level > prevLevel) {
+      audioManager.playLevelUp();
+    } else {
+      audioManager.playChestOpen();
+    }
   };
 
   const handleAddXP = async (amount: number) => {
+    const prevLevel = user?.level || 1;
     const updated = await dataStore.addXP(amount);
     setUser(updated);
+
+    if (updated.level > prevLevel) {
+      audioManager.playLevelUp();
+    } else {
+      audioManager.playSpark();
+    }
   };
 
   const handleAddSparks = async (amount: number) => {
     const updated = await dataStore.addSparks(amount);
     setUser(updated);
+    audioManager.playSpark();
   };
 
   const handleSetTheme = async (theme: AppTheme) => {
@@ -108,7 +201,7 @@ export default function App() {
   const handleResetProgress = async () => {
     const reset = await dataStore.resetProgress();
     setUser(reset);
-    setCurrentTab("home");
+    switchTab("home");
   };
 
   const handleNavigateNextQuest = () => {
@@ -181,6 +274,11 @@ export default function App() {
     await authService.signOut();
   };
 
+  // If this window is the Google OAuth popup / callback tab, render the compact login completion screen
+  if (isOAuthCallbackWindow()) {
+    return <OAuthCallbackHandler onCompleteStandalone={handleLoginSuccess} />;
+  }
+
   if (!user) {
     return (
       <div className={`min-h-screen ${isDark ? "bg-[#18181B] text-zinc-100" : "bg-[#E2E8F0] text-slate-800"} flex items-center justify-center font-mono text-xs`}>
@@ -243,17 +341,20 @@ export default function App() {
 
         {/* Dynamic View Body */}
         <main className="flex-1">
-          <AnimatePresence mode="wait">
+          <AnimatePresence mode="wait" custom={tabDirection}>
             {currentTab === "home" && (
               <motion.div
                 key="home"
-                initial={{ opacity: 0, y: 15 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -15 }}
-                transition={{ duration: 0.22, ease: "easeInOut" }}
+                custom={tabDirection}
+                variants={sectionVariants}
+                initial="initial"
+                animate="animate"
+                exit="exit"
               >
                 <HomePathView
                   stages={stages}
+                  activeCourse={activeCourse}
+                  onOpenCoursePicker={() => setIsCoursePickerOpen(true)}
                   user={user}
                   onSelectQuest={handleSelectQuest}
                   onClaimChest={handleClaimChest}
@@ -267,10 +368,11 @@ export default function App() {
             {currentTab === "lab" && (
               <motion.div
                 key="lab"
-                initial={{ opacity: 0, y: 15 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -15 }}
-                transition={{ duration: 0.22, ease: "easeInOut" }}
+                custom={tabDirection}
+                variants={sectionVariants}
+                initial="initial"
+                animate="animate"
+                exit="exit"
               >
                 <LabView
                   user={user}
@@ -285,10 +387,11 @@ export default function App() {
             {currentTab === "league" && (
               <motion.div
                 key="league"
-                initial={{ opacity: 0, y: 15 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -15 }}
-                transition={{ duration: 0.22, ease: "easeInOut" }}
+                custom={tabDirection}
+                variants={sectionVariants}
+                initial="initial"
+                animate="animate"
+                exit="exit"
               >
                 <LeagueView user={user} theme={activeTheme} />
               </motion.div>
@@ -297,10 +400,11 @@ export default function App() {
             {currentTab === "you" && (
               <motion.div
                 key="you"
-                initial={{ opacity: 0, y: 15 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -15 }}
-                transition={{ duration: 0.22, ease: "easeInOut" }}
+                custom={tabDirection}
+                variants={sectionVariants}
+                initial="initial"
+                animate="animate"
+                exit="exit"
               >
                 <YouView
                   user={user}
@@ -315,6 +419,7 @@ export default function App() {
                   }}
                   onCompleteQuest={handleCompleteQuest}
                   onLogOut={handleLogOut}
+                  onUpdateUser={(updated) => setUser(updated)}
                   theme={activeTheme}
                 />
               </motion.div>
@@ -323,15 +428,18 @@ export default function App() {
             {currentTab === "quest" && activeQuest && (
               <motion.div
                 key={`quest-${activeQuest.quest.id}`}
-                initial={{ opacity: 0, scale: 0.98 }}
-                animate={{ opacity: 1, scale: 1 }}
-                exit={{ opacity: 0, scale: 0.98 }}
-                transition={{ duration: 0.25, ease: "easeOut" }}
+                initial={{ opacity: 0, y: 24, scale: 0.97 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                exit={{ opacity: 0, y: -20, scale: 0.97 }}
+                transition={{
+                  duration: 0.28,
+                  ease: [0.16, 1, 0.3, 1],
+                }}
               >
                 <QuestView
                   quest={activeQuest.quest}
                   stage={activeQuest.stage}
-                  onBackToJourney={() => setCurrentTab("home")}
+                  onBackToJourney={() => switchTab("home")}
                   onCompleteQuest={handleCompleteQuest}
                   onOpenTutor={(title, phase) => {
                     setTutorContext((prev) => ({
@@ -355,7 +463,7 @@ export default function App() {
           <BottomNav
             currentTab={currentTab}
             onSelectTab={(tab) => {
-              setCurrentTab(tab);
+              switchTab(tab);
               window.scrollTo({ top: 0, behavior: "smooth" });
             }}
             theme={activeTheme}

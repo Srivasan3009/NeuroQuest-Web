@@ -1,10 +1,4 @@
-export type StageId =
-  | "ai-foundations"
-  | "machine-learning"
-  | "neural-networks"
-  | "generative-ai"
-  | "ai-agents"
-  | "ai-projects";
+export type StageId = string;
 
 export type QuestStatus = "locked" | "available" | "in-progress" | "completed";
 
@@ -177,6 +171,7 @@ export interface Course {
   tag: string;
   lessonsCount: number;
   icon: string;
+  stageIds: StageId[];
 }
 
 export interface UserProfile {
@@ -203,8 +198,6 @@ export interface UserProfile {
   achievements: Achievement[];
   joinedDate: string;
   authProvider: "google" | "supabase_email" | "firebase_email" | "firebase" | "guest" | string;
-  googleSheetId?: string;
-  googleSheetUrl?: string;
 }
 
 export type TutorDifficulty = "beginner" | "intermediate" | "advanced";
@@ -217,5 +210,5 @@ export interface TutorChatMessage {
   timestamp: string;
   mode?: TutorMode;
   difficulty?: TutorDifficulty;
-  source?: "gemini" | "pedagogical_engine" | "fallback";
+  source?: "pedagogical_engine" | "fallback";
 }

@@ -1,24 +1,8 @@
 import { UserProfile } from "../types";
 import { dataStore } from "./storage";
-import {
-  auth,
-  googleProvider,
-  signInWithPopup,
-  signInWithEmailAndPassword,
-  createUserWithEmailAndPassword,
-  firebaseSignOut,
-  sendPasswordResetEmail,
-  updateProfile,
-  onAuthStateChanged,
-  FirebaseUser,
-  syncUserProfileFromFirestore,
-  saveUserProfileToFirestore,
-  setGoogleAccessToken,
-  getGoogleAccessToken,
-} from "./firebase";
-import { GoogleAuthProvider } from "firebase/auth";
 import { INITIAL_PROFILE } from "../data/gamification";
-import { googleSheetsService } from "./googleSheets";
+import { supabase, isSupabaseConfigured } from "./supabase";
+import type { User as SupabaseUser, Session as SupabaseSession } from "@supabase/supabase-js";
 
 export interface AuthSession {
   user: {
@@ -28,6 +12,7 @@ export interface AuthSession {
     username?: string;
     age?: number;
     avatarUrl: string;
+    isEmailVerified: boolean;
   };
   token: string;
   expiresAt: number;
@@ -40,25 +25,23 @@ export interface AuthState {
   isLoading: boolean;
 }
 
-interface VerificationRecord {
-  code: string;
-  expiresAt: number;
-  purpose: "signup" | "signin" | "reset";
+export interface SignUpResult {
+  requiresVerification: boolean;
+  user?: UserProfile;
+  message?: string;
 }
 
 const AUTH_SESSION_KEY = "neuroquest_auth_session_v1";
-const VERIFICATION_STORAGE_KEY = "neuroquest_verification_codes_v1";
 
 export class AuthService {
   private static instance: AuthService;
   private session: AuthSession | null = null;
   private currentUser: UserProfile | null = null;
-  private verificationCodes: Map<string, VerificationRecord> = new Map();
+  private authStateListeners: Array<(user: UserProfile | null) => void> = [];
 
   private constructor() {
     this.restoreSession();
-    this.restoreVerificationCodes();
-    this.listenToAuthChanges();
+    this.initSupabaseListener();
   }
 
   public static getInstance(): AuthService {
@@ -68,12 +51,29 @@ export class AuthService {
     return AuthService.instance;
   }
 
-  public isSupabaseConfigured(): boolean {
-    return true;
+  public isConfigured(): boolean {
+    return isSupabaseConfigured;
   }
 
-  public isFirebaseConfigured(): boolean {
-    return true;
+  public isSupabaseConfigured(): boolean {
+    return isSupabaseConfigured;
+  }
+
+  public onAuthStateChanged(listener: (user: UserProfile | null) => void): () => void {
+    this.authStateListeners.push(listener);
+    return () => {
+      this.authStateListeners = this.authStateListeners.filter((l) => l !== listener);
+    };
+  }
+
+  private notifyListeners(user: UserProfile | null) {
+    this.authStateListeners.forEach((listener) => {
+      try {
+        listener(user);
+      } catch (err) {
+        console.warn("Auth listener error:", err);
+      }
+    });
   }
 
   private restoreSession() {
@@ -87,139 +87,103 @@ export class AuthService {
     }
   }
 
-  private restoreVerificationCodes() {
+  /**
+   * Listen to real Supabase auth state changes (e.g. email verification link clicks)
+   */
+  private initSupabaseListener() {
     try {
-      const stored = localStorage.getItem(VERIFICATION_STORAGE_KEY);
-      if (stored) {
-        const parsed = JSON.parse(stored);
-        Object.entries(parsed).forEach(([email, rec]: [string, any]) => {
-          if (rec.expiresAt > Date.now()) {
-            this.verificationCodes.set(email.toLowerCase(), rec);
+      supabase.auth.onAuthStateChange(async (event, session) => {
+        if (event === "SIGNED_IN" || event === "USER_UPDATED" || event === "TOKEN_REFRESHED") {
+          if (session?.user) {
+            const isVerified = Boolean(
+              session.user.email_confirmed_at ||
+              session.user.confirmed_at ||
+              session.user.app_metadata?.provider === "google"
+            );
+
+            if (isVerified) {
+              const profile = await this.mapSupabaseUserToProfile(session.user);
+              this.currentUser = profile;
+              this.setSessionFromSupabase(session, profile);
+              await dataStore.saveUserProfile(profile);
+              this.notifyListeners(profile);
+            }
           }
-        });
-      }
-    } catch {
-      // Ignore
-    }
-  }
-
-  private saveVerificationCodes() {
-    try {
-      const obj: Record<string, VerificationRecord> = {};
-      this.verificationCodes.forEach((rec, email) => {
-        if (rec.expiresAt > Date.now()) {
-          obj[email] = rec;
-        }
-      });
-      localStorage.setItem(VERIFICATION_STORAGE_KEY, JSON.stringify(obj));
-    } catch {
-      // Ignore
-    }
-  }
-
-  /**
-   * Generates a 6-digit live email verification code (valid for 10 minutes)
-   */
-  public generateVerificationCode(
-    email: string,
-    purpose: "signup" | "signin" | "reset" = "signup"
-  ): { code: string; expiresAt: number; formattedDisplay: string } {
-    const cleanEmail = email.trim().toLowerCase();
-    // Generate secure 6-digit numeric string
-    const randomNum = Math.floor(100000 + Math.random() * 900000);
-    const code = randomNum.toString();
-    const expiresAt = Date.now() + 10 * 60 * 1000; // 10 minutes
-
-    const record: VerificationRecord = { code, expiresAt, purpose };
-    this.verificationCodes.set(cleanEmail, record);
-    this.saveVerificationCodes();
-
-    return {
-      code,
-      expiresAt,
-      formattedDisplay: `${code.slice(0, 3)} ${code.slice(3)}`,
-    };
-  }
-
-  /**
-   * Verify the 6-digit email code
-   */
-  public verifyEmailCode(
-    email: string,
-    inputCode: string
-  ): { valid: boolean; message?: string } {
-    const cleanEmail = email.trim().toLowerCase();
-    const cleanCode = inputCode.trim().replace(/\s+/g, "");
-
-    const record = this.verificationCodes.get(cleanEmail);
-    if (!record) {
-      // For demo / test resilience, if user enters the default test code or active code
-      if (cleanCode.length === 6 && /^\d+$/.test(cleanCode)) {
-        return { valid: true };
-      }
-      return {
-        valid: false,
-        message: "No verification code requested for this email. Please click 'Send Code'.",
-      };
-    }
-
-    if (Date.now() > record.expiresAt) {
-      this.verificationCodes.delete(cleanEmail);
-      this.saveVerificationCodes();
-      return {
-        valid: false,
-        message: "Verification code has expired. Please request a new code.",
-      };
-    }
-
-    if (record.code !== cleanCode) {
-      return {
-        valid: false,
-        message: "Invalid verification code. Please check the 6-digit code sent to your email.",
-      };
-    }
-
-    // Code verified successfully
-    return { valid: true };
-  }
-
-  private listenToAuthChanges() {
-    try {
-      onAuthStateChanged(auth, async (fbUser: FirebaseUser | null) => {
-        if (fbUser) {
+        } else if (event === "SIGNED_OUT") {
+          this.session = null;
+          this.currentUser = null;
           try {
-            const profile = await syncUserProfileFromFirestore(fbUser.uid, {
-              email: fbUser.email || undefined,
-              fullName: fbUser.displayName || undefined,
-              avatarUrl: fbUser.photoURL || undefined,
-              authProvider: fbUser.providerData[0]?.providerId || "firebase",
-            });
-            this.currentUser = profile;
-            this.setSessionFromFirebaseUser(fbUser, profile);
-            await dataStore.saveUserProfile(profile);
-          } catch (e) {
-            console.warn("Firestore sync warning on auth state change:", e);
+            localStorage.removeItem(AUTH_SESSION_KEY);
+            localStorage.removeItem("neuroquest_auth_active");
+          } catch {
+            // Ignore
           }
+          this.notifyListeners(null);
         }
       });
     } catch (err) {
-      console.warn("Firebase onAuthStateChanged setup:", err);
+      console.warn("Supabase auth state listener init warning:", err);
     }
   }
 
-  private setSessionFromFirebaseUser(fbUser: FirebaseUser, profile: UserProfile) {
+  private async mapSupabaseUserToProfile(
+    sbUser: SupabaseUser,
+    fallbackName?: string,
+    fallbackUsername?: string,
+    fallbackAge?: number
+  ): Promise<UserProfile> {
+    const existing = await dataStore.getUserProfile();
+    const meta = sbUser.user_metadata || {};
+    const email = (sbUser.email || meta.email || existing.email || "").toLowerCase();
+    const fullName =
+      meta.full_name || meta.name || fallbackName || existing.fullName || email.split("@")[0] || "Cadet";
+    const username =
+      meta.username ||
+      fallbackUsername ||
+      existing.username ||
+      email.split("@")[0]?.replace(/[^a-z0-9_]/g, "") ||
+      "cadet";
+    const age = Number(meta.age || fallbackAge || existing.age || 20);
+    const googleAvatar =
+      meta.avatar_url ||
+      meta.picture ||
+      meta.avatarUrl ||
+      sbUser.identities?.[0]?.identity_data?.avatar_url ||
+      sbUser.identities?.[0]?.identity_data?.picture ||
+      "";
+    const avatarUrl = googleAvatar || existing.avatarUrl || "";
+
+    const profile: UserProfile = {
+      ...existing,
+      id: sbUser.id || existing.id,
+      email: email,
+      fullName: fullName,
+      username: username,
+      age: age,
+      avatarUrl: avatarUrl,
+      authProvider: sbUser.app_metadata?.provider || "supabase",
+      lastActiveDate: new Date().toISOString().split("T")[0],
+    };
+
+    return profile;
+  }
+
+  private setSessionFromSupabase(session: SupabaseSession, profile: UserProfile) {
+    const expiresAt = session.expires_at ? session.expires_at * 1000 : Date.now() + 7 * 24 * 3600 * 1000;
     this.session = {
       user: {
-        id: fbUser.uid,
-        email: fbUser.email || profile.email,
-        name: fbUser.displayName || profile.fullName,
+        id: session.user.id,
+        email: profile.email,
+        name: profile.fullName,
         username: profile.username,
         age: profile.age,
-        avatarUrl: fbUser.photoURL || profile.avatarUrl,
+        avatarUrl: profile.avatarUrl,
+        isEmailVerified: Boolean(session.user.email_confirmed_at || session.user.confirmed_at),
       },
-      token: "fb_token_" + fbUser.uid,
-      expiresAt: Date.now() + 7 * 24 * 3600 * 1000,
+      token: session.access_token,
+      expiresAt,
     };
+
     try {
       localStorage.setItem(AUTH_SESSION_KEY, JSON.stringify(this.session));
       localStorage.setItem("neuroquest_auth_active", "true");
@@ -229,180 +193,302 @@ export class AuthService {
   }
 
   /**
-   * Real Google Authentication via Firebase Auth Popup + Google Sheets sync
+   * Real Supabase Email & Password Sign-Up with Confirmation Email
    */
-  public async signInWithGoogle(): Promise<UserProfile> {
-    try {
-      const result = await signInWithPopup(auth, googleProvider);
-      const fbUser = result.user;
-
-      const credential = GoogleAuthProvider.credentialFromResult(result);
-      if (credential?.accessToken) {
-        setGoogleAccessToken(credential.accessToken);
-      }
-
-      const email = fbUser.email || "learner@google.com";
-      const derivedUsername = email.split("@")[0].toLowerCase().replace(/[^a-z0-9_]/g, "");
-
-      const profile = await syncUserProfileFromFirestore(fbUser.uid, {
-        email: fbUser.email || undefined,
-        fullName: fbUser.displayName || "Alex Cadet",
-        username: derivedUsername,
-        age: 21,
-        avatarUrl: fbUser.photoURL || INITIAL_PROFILE.avatarUrl,
-        authProvider: "google",
-      });
-
-      this.currentUser = profile;
-      this.setSessionFromFirebaseUser(fbUser, profile);
-      await dataStore.saveUserProfile(profile);
-
-      // Automatically sync user details to Google Sheet on Google Drive
-      try {
-        const syncRes = await googleSheetsService.syncUserToGoogleSheet(
-          profile,
-          credential?.accessToken
-        );
-        if (syncRes.success && syncRes.spreadsheetUrl) {
-          profile.googleSheetId = syncRes.spreadsheetId;
-          profile.googleSheetUrl = syncRes.spreadsheetUrl;
-          await dataStore.saveUserProfile(profile);
-          await saveUserProfileToFirestore(profile);
-        }
-      } catch (sheetErr) {
-        console.warn("Google Sheet sync notice:", sheetErr);
-      }
-
-      return profile;
-    } catch (firebaseErr: any) {
-      console.warn("Firebase Google popup fallback or cancelled:", firebaseErr);
-
-      // Fallback
-      const existing = await dataStore.getUserProfile();
-      const updatedProfile: UserProfile = {
-        ...existing,
-        id: existing.id || `google-cadet-${Date.now()}`,
-        email: existing.email || "alex.learner@gmail.com",
-        fullName: existing.fullName || "Alex Chen",
-        username: existing.username || "alexchen",
-        age: existing.age || 21,
-        authProvider: "google",
-      };
-
-      this.session = {
-        user: {
-          id: updatedProfile.id,
-          email: updatedProfile.email,
-          name: updatedProfile.fullName,
-          username: updatedProfile.username,
-          age: updatedProfile.age,
-          avatarUrl: updatedProfile.avatarUrl,
-        },
-        token: "session_token_" + Math.random().toString(36).substring(2),
-        expiresAt: Date.now() + 7 * 24 * 3600 * 1000,
-      };
-
-      localStorage.setItem(AUTH_SESSION_KEY, JSON.stringify(this.session));
-      localStorage.setItem("neuroquest_auth_active", "true");
-      await dataStore.saveUserProfile(updatedProfile);
-      return updatedProfile;
-    }
-  }
-
-  /**
-   * Real Email Sign In with 6-Digit Code Verification
-   */
-  public async signInWithEmailAndCode(
-    email: string,
-    password: string,
-    verificationCode: string
-  ): Promise<UserProfile> {
+  public async signUpWithDetails(details: {
+    fullName: string;
+    username: string;
+    email: string;
+    age: number;
+    password: string;
+  }): Promise<SignUpResult> {
+    const { fullName, username, email, age, password } = details;
     const cleanEmail = email.trim().toLowerCase();
-    // 1. Verify 6-digit code
-    const verifyResult = this.verifyEmailCode(cleanEmail, verificationCode);
-    if (!verifyResult.valid) {
-      throw new Error(verifyResult.message || "Invalid verification code.");
+    const cleanUsername = username.trim().replace(/^@/, "").toLowerCase();
+
+    if (!cleanEmail) {
+      throw new Error("Please provide a valid email address.");
+    }
+    if (!password || password.length < 6) {
+      throw new Error("Password must be at least 6 characters long.");
     }
 
-    let fbUser: FirebaseUser | null = null;
-    if (password) {
-      try {
-        const userCredential = await signInWithEmailAndPassword(auth, cleanEmail, password);
-        fbUser = userCredential.user;
-      } catch (fbErr: any) {
-        console.warn("Firebase signin error (will fallback if local):", fbErr);
-        if (
-          fbErr?.code === "auth/wrong-password" ||
-          fbErr?.code === "auth/invalid-credential"
-        ) {
-          throw new Error("Invalid email or password. Please check your credentials.");
-        }
-      }
-    }
-
-    const existingProfile = await dataStore.getUserProfile();
-    const cleanUsername = cleanEmail.split("@")[0].toLowerCase().replace(/[^a-z0-9_]/g, "");
-
-    let updatedProfile: UserProfile;
-    if (fbUser) {
-      updatedProfile = await syncUserProfileFromFirestore(fbUser.uid, {
-        email: cleanEmail,
-        fullName: fbUser.displayName || existingProfile.fullName || cleanUsername,
-        username: existingProfile.username || cleanUsername,
-        age: existingProfile.age || 20,
-        authProvider: "firebase_email",
-      });
-      this.setSessionFromFirebaseUser(fbUser, updatedProfile);
-    } else {
-      updatedProfile = {
-        ...existingProfile,
-        id: existingProfile.id || `cadet-${Date.now()}`,
-        email: cleanEmail,
-        fullName: existingProfile.fullName || cleanEmail.split("@")[0],
-        username: existingProfile.username || cleanUsername,
-        age: existingProfile.age || 20,
-        authProvider: "email_code_verified",
-        lastActiveDate: new Date().toISOString().split("T")[0],
-      };
-
-      this.session = {
-        user: {
-          id: updatedProfile.id,
-          email: updatedProfile.email,
-          name: updatedProfile.fullName,
-          username: updatedProfile.username,
-          age: updatedProfile.age,
-          avatarUrl: updatedProfile.avatarUrl,
+    // Call real Supabase Auth
+    const { data, error } = await supabase.auth.signUp({
+      email: cleanEmail,
+      password: password,
+      options: {
+        data: {
+          full_name: fullName.trim(),
+          username: cleanUsername,
+          age: Number(age) || 20,
         },
-        token: "session_token_" + Math.random().toString(36).substring(2),
-        expiresAt: Date.now() + 7 * 24 * 3600 * 1000,
-      };
+        emailRedirectTo: window.location.origin,
+      },
+    });
 
-      localStorage.setItem(AUTH_SESSION_KEY, JSON.stringify(this.session));
-      localStorage.setItem("neuroquest_auth_active", "true");
-    }
-
-    this.currentUser = updatedProfile;
-    await dataStore.saveUserProfile(updatedProfile);
-
-    // Sync to Google Sheet on Google Drive
-    try {
-      const syncRes = await googleSheetsService.syncUserToGoogleSheet(updatedProfile);
-      if (syncRes.success && syncRes.spreadsheetUrl) {
-        updatedProfile.googleSheetId = syncRes.spreadsheetId;
-        updatedProfile.googleSheetUrl = syncRes.spreadsheetUrl;
-        await dataStore.saveUserProfile(updatedProfile);
-        await saveUserProfileToFirestore(updatedProfile);
+    if (error) {
+      // Handle known Supabase error messages gracefully
+      if (error.message.includes("User already registered")) {
+        throw new Error("An account with this email address already exists. Please sign in instead.");
       }
-    } catch (sheetErr) {
-      console.warn("Sheets sync warning:", sheetErr);
+      throw new Error(error.message || "Failed to create account. Please check your details.");
     }
 
-    return updatedProfile;
+    if (!data.user) {
+      throw new Error("Unable to create account. Please try again later.");
+    }
+
+    // Check if user already existed (Supabase returns user with empty identities if duplicate exists)
+    if (data.user.identities && data.user.identities.length === 0) {
+      throw new Error("An account with this email already exists. Please sign in instead.");
+    }
+
+    // Check if email confirmation is required (session will be null or email_confirmed_at is null)
+    const isEmailVerified = Boolean(data.user.email_confirmed_at || data.user.confirmed_at);
+
+    if (!isEmailVerified) {
+      // Real confirmation email was sent by Supabase
+      // Unverified users must NOT be marked as verified or logged in automatically
+      return {
+        requiresVerification: true,
+        message: `A real confirmation link has been sent to ${cleanEmail}. Please check your inbox and click the verification link to activate your account before logging in.`,
+      };
+    }
+
+    // If email confirmation is disabled on Supabase project (immediate session)
+    const profile = await this.mapSupabaseUserToProfile(data.user, fullName, cleanUsername, age);
+    if (data.session) {
+      this.setSessionFromSupabase(data.session, profile);
+    }
+    this.currentUser = profile;
+    await dataStore.saveUserProfile(profile);
+
+    return {
+      requiresVerification: false,
+      user: profile,
+    };
   }
 
   /**
-   * Quick / modal email sign in compatibility helper
+   * Real Supabase Email & Password Sign-In
+   * Checks if user is verified
+   */
+  public async signInWithPassword(email: string, password: string): Promise<UserProfile> {
+    const cleanEmail = email.trim().toLowerCase();
+
+    if (!cleanEmail) {
+      throw new Error("Please enter your email address.");
+    }
+    if (!password) {
+      throw new Error("Please enter your password.");
+    }
+
+    const { data, error } = await supabase.auth.signInWithPassword({
+      email: cleanEmail,
+      password: password,
+    });
+
+    if (error) {
+      if (error.message.toLowerCase().includes("email not confirmed")) {
+        throw new Error(
+          "Your email address is not verified yet. Please check your inbox for the verification link or request a new one."
+        );
+      }
+      if (error.message.toLowerCase().includes("invalid login credentials")) {
+        throw new Error("Invalid email or password. Please verify your credentials.");
+      }
+      throw new Error(error.message || "Failed to sign in. Please verify your email and password.");
+    }
+
+    if (!data.user || !data.session) {
+      throw new Error("Failed to start session. Please try again.");
+    }
+
+    // Verification check from real provider
+    const isVerified = Boolean(
+      data.user.email_confirmed_at ||
+      data.user.confirmed_at ||
+      data.user.app_metadata?.provider === "google"
+    );
+
+    if (!isVerified) {
+      // Sign out immediately if not verified
+      await supabase.auth.signOut();
+      throw new Error(
+        "Account unverified. Please check your email and click the confirmation link before signing in."
+      );
+    }
+
+    const profile = await this.mapSupabaseUserToProfile(data.user);
+    this.currentUser = profile;
+    this.setSessionFromSupabase(data.session, profile);
+    await dataStore.saveUserProfile(profile);
+
+    return profile;
+  }
+
+  /**
+   * Resend Real Verification / Confirmation Email via Supabase
+   */
+  public async resendVerificationEmail(email: string): Promise<void> {
+    const cleanEmail = email.trim().toLowerCase();
+    if (!cleanEmail) {
+      throw new Error("Please enter your email address.");
+    }
+
+    const { error } = await supabase.auth.resend({
+      type: "signup",
+      email: cleanEmail,
+      options: {
+        emailRedirectTo: window.location.origin,
+      },
+    });
+
+    if (error) {
+      throw new Error(error.message || "Could not resend verification email. Please wait a minute and try again.");
+    }
+  }
+
+  /**
+   * Real Supabase Google OAuth Sign-In
+   * Launches a dedicated login popup window and returns to the app upon completion
+   */
+  public async signInWithGoogle(): Promise<{ user?: UserProfile; popupUrl?: string }> {
+    const { data, error } = await supabase.auth.signInWithOAuth({
+      provider: "google",
+      options: {
+        redirectTo: window.location.origin,
+        skipBrowserRedirect: true,
+      },
+    });
+
+    if (error) {
+      throw new Error(error.message || "Failed to initiate Google Sign-In.");
+    }
+
+    if (!data?.url) {
+      throw new Error("No authorization URL returned from Supabase.");
+    }
+
+    const authUrl = data.url;
+
+    // Calculate centered coordinates for popup
+    const width = 520;
+    const height = 650;
+    const left = window.screenLeft !== undefined ? window.screenLeft + (window.outerWidth - width) / 2 : 200;
+    const top = window.screenTop !== undefined ? window.screenTop + (window.outerHeight - height) / 2 : 100;
+
+    let popupWindow: Window | null = null;
+    try {
+      popupWindow = window.open(
+        authUrl,
+        "supabase_google_oauth",
+        `width=${width},height=${height},left=${left},top=${top},menubar=no,toolbar=no,status=no,resizable=yes`
+      );
+    } catch {
+      popupWindow = null;
+    }
+
+    const isIframe = window.self !== window.top;
+    if (!popupWindow && !isIframe) {
+      // If not in iframe and popup was blocked, redirect directly
+      window.location.href = authUrl;
+      return { popupUrl: authUrl };
+    }
+
+    // Return a promise that resolves once OAuth completes via postMessage, storage event, or polling
+    return new Promise((resolve, reject) => {
+      let resolved = false;
+
+      const cleanup = () => {
+        window.removeEventListener("message", onMessage);
+        window.removeEventListener("storage", onStorage);
+        clearInterval(checkInterval);
+        clearTimeout(timeoutId);
+        if (popupWindow && !popupWindow.closed) {
+          try {
+            popupWindow.close();
+          } catch {
+            // Ignore
+          }
+        }
+      };
+
+      const handleSuccess = async (profile?: UserProfile) => {
+        if (resolved) return;
+        resolved = true;
+
+        let finalProfile = profile;
+        if (!finalProfile) {
+          const { data: sessionData } = await supabase.auth.getSession();
+          if (sessionData?.session?.user) {
+            finalProfile = await this.mapSupabaseUserToProfile(sessionData.session.user);
+            this.setSessionFromSupabase(sessionData.session, finalProfile);
+          } else {
+            finalProfile = await dataStore.getUserProfile();
+          }
+        }
+
+        this.currentUser = finalProfile;
+        await dataStore.saveUserProfile(finalProfile);
+        this.notifyListeners(finalProfile);
+        cleanup();
+        resolve({ user: finalProfile });
+      };
+
+      // 1. Listen for postMessage from the popup callback
+      const onMessage = async (event: MessageEvent) => {
+        if (event.data?.type === "NEUROQUEST_AUTH_CALLBACK_SUCCESS") {
+          handleSuccess(event.data.user);
+        } else if (event.data?.type === "NEUROQUEST_AUTH_CALLBACK_ERROR") {
+          if (!resolved) {
+            resolved = true;
+            cleanup();
+            reject(new Error(event.data.error || "Google Sign-In was cancelled or failed."));
+          }
+        }
+      };
+      window.addEventListener("message", onMessage);
+
+      // 2. Listen for cross-tab storage changes
+      const onStorage = async (e: StorageEvent) => {
+        if (e.key === "neuroquest_auth_active" && e.newValue === "true") {
+          handleSuccess();
+        }
+      };
+      window.addEventListener("storage", onStorage);
+
+      // 3. Fallback polling
+      const checkInterval = setInterval(async () => {
+        try {
+          const { data: sessionData } = await supabase.auth.getSession();
+          if (sessionData?.session?.user) {
+            handleSuccess();
+          }
+        } catch {
+          // Keep checking
+        }
+      }, 800);
+
+      // 4. Timeout safety (60s)
+      const timeoutId = setTimeout(() => {
+        if (!resolved) {
+          resolved = true;
+          cleanup();
+          resolve({ popupUrl: authUrl });
+        }
+      }, 60000);
+
+      if (!popupWindow) {
+        // Popup was blocked by browser
+        resolve({ popupUrl: authUrl });
+      }
+    });
+  }
+
+  /**
+   * Quick email helper for modal profile sync
    */
   public async signInWithEmail(email: string, fullName?: string): Promise<UserProfile> {
     const cleanEmail = email.trim().toLowerCase();
@@ -414,158 +500,58 @@ export class AuthService {
       email: cleanEmail,
       fullName: fullName || existing.fullName || "Cadet",
       username: existing.username || derivedUsername,
-      authProvider: "local",
+      authProvider: "supabase",
     };
 
-    this.session = {
-      user: {
-        id: updatedProfile.id,
-        email: updatedProfile.email,
-        name: updatedProfile.fullName,
-        username: updatedProfile.username,
-        age: updatedProfile.age,
-        avatarUrl: updatedProfile.avatarUrl,
-      },
-      token: "email_token_" + Date.now(),
-      expiresAt: Date.now() + 7 * 24 * 3600 * 1000,
-    };
-
-    localStorage.setItem(AUTH_SESSION_KEY, JSON.stringify(this.session));
-    localStorage.setItem("neuroquest_auth_active", "true");
     this.currentUser = updatedProfile;
     await dataStore.saveUserProfile(updatedProfile);
-
-    // Sync to Google Sheets
-    try {
-      await googleSheetsService.syncUserToGoogleSheet(updatedProfile);
-    } catch {
-      // Ignore
-    }
-
     return updatedProfile;
   }
 
   /**
-   * Real Sign Up with Name, Email, Username, Age, Password, and 6-Digit Email Code Verification
+   * Real Supabase Password Reset Email
    */
-  public async signUpWithDetails(details: {
-    fullName: string;
-    username: string;
-    email: string;
-    age: number;
-    password: string;
-    verificationCode: string;
-  }): Promise<UserProfile> {
-    const { fullName, username, email, age, password, verificationCode } = details;
+  public async resetPassword(email: string): Promise<void> {
     const cleanEmail = email.trim().toLowerCase();
-    const cleanUsername = username.trim().replace(/^@/, "").toLowerCase();
-
-    // 1. Verify 6-digit email code
-    const verifyResult = this.verifyEmailCode(cleanEmail, verificationCode);
-    if (!verifyResult.valid) {
-      throw new Error(verifyResult.message || "Invalid verification code.");
+    if (!cleanEmail) {
+      throw new Error("Please enter your email address.");
     }
 
-    let fbUser: FirebaseUser | null = null;
-    try {
-      const userCredential = await createUserWithEmailAndPassword(auth, cleanEmail, password);
-      fbUser = userCredential.user;
-      if (fullName) {
-        await updateProfile(fbUser, { displayName: fullName });
-      }
-    } catch (fbErr: any) {
-      console.warn("Firebase createUser error:", fbErr);
-      if (fbErr?.code === "auth/email-already-in-use") {
-        // User already exists, try signing in with email & code
-        return this.signInWithEmailAndCode(cleanEmail, password, verificationCode);
-      }
-      if (fbErr?.code === "auth/weak-password") {
-        throw new Error("Password must be at least 6 characters long.");
-      }
-      if (fbErr?.code === "auth/invalid-email") {
-        throw new Error("Please enter a valid email address.");
-      }
+    const { error } = await supabase.auth.resetPasswordForEmail(cleanEmail, {
+      redirectTo: window.location.origin,
+    });
+
+    if (error) {
+      throw new Error(error.message || "Failed to send password reset email.");
     }
-
-    const newProfile: UserProfile = {
-      ...INITIAL_PROFILE,
-      id: fbUser?.uid || `cadet-${Date.now()}`,
-      email: cleanEmail,
-      fullName: fullName.trim() || cleanUsername || "AI Cadet",
-      username: cleanUsername || cleanEmail.split("@")[0],
-      age: Number(age) || 20,
-      authProvider: "firebase_email",
-      joinedDate: new Date().toLocaleDateString("en-US", { month: "long", year: "numeric" }),
-      lastActiveDate: new Date().toISOString().split("T")[0],
-    };
-
-    if (fbUser) {
-      this.setSessionFromFirebaseUser(fbUser, newProfile);
-      await saveUserProfileToFirestore(newProfile);
-    } else {
-      this.session = {
-        user: {
-          id: newProfile.id,
-          email: newProfile.email,
-          name: newProfile.fullName,
-          username: newProfile.username,
-          age: newProfile.age,
-          avatarUrl: newProfile.avatarUrl,
-        },
-        token: "session_token_" + Math.random().toString(36).substring(2),
-        expiresAt: Date.now() + 7 * 24 * 3600 * 1000,
-      };
-      localStorage.setItem(AUTH_SESSION_KEY, JSON.stringify(this.session));
-      localStorage.setItem("neuroquest_auth_active", "true");
-    }
-
-    this.currentUser = newProfile;
-    await dataStore.saveUserProfile(newProfile);
-
-    // Sync to Google Sheet on Google Drive
-    try {
-      const syncRes = await googleSheetsService.syncUserToGoogleSheet(newProfile);
-      if (syncRes.success && syncRes.spreadsheetUrl) {
-        newProfile.googleSheetId = syncRes.spreadsheetId;
-        newProfile.googleSheetUrl = syncRes.spreadsheetUrl;
-        await dataStore.saveUserProfile(newProfile);
-        await saveUserProfileToFirestore(newProfile);
-      }
-    } catch (sheetErr) {
-      console.warn("Sheets sync on signup warning:", sheetErr);
-    }
-
-    return newProfile;
   }
 
   /**
-   * Password Reset Email
+   * Sign Out
    */
-  public async resetPassword(email: string): Promise<void> {
-    try {
-      await sendPasswordResetEmail(auth, email);
-    } catch (err) {
-      console.warn("Firebase password reset email:", err);
-    }
-  }
-
   public async signOut(): Promise<void> {
     try {
-      await firebaseSignOut(auth);
+      await supabase.auth.signOut();
     } catch (err) {
-      console.warn("Firebase signOut:", err);
+      console.warn("Supabase sign out error:", err);
     }
-    setGoogleAccessToken(null);
     this.session = null;
     this.currentUser = null;
-    localStorage.removeItem(AUTH_SESSION_KEY);
-    localStorage.removeItem("neuroquest_auth_active");
+    try {
+      localStorage.removeItem(AUTH_SESSION_KEY);
+      localStorage.removeItem("neuroquest_auth_active");
+    } catch {
+      // Ignore
+    }
   }
 
   public getSession(): AuthSession | null {
     return this.session;
   }
+
+  public getCurrentUser(): UserProfile | null {
+    return this.currentUser;
+  }
 }
 
 export const authService = AuthService.getInstance();
-

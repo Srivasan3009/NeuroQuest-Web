@@ -30,9 +30,11 @@ export const AuthModal: React.FC<AuthModalProps> = ({
   const handleGoogleSignIn = async () => {
     setLoading(true);
     try {
-      const updated = await authService.signInWithGoogle();
-      onUpdateUser(updated);
-      onClose();
+      const result = await authService.signInWithGoogle();
+      if (result.user) {
+        onUpdateUser(result.user);
+        onClose();
+      }
     } finally {
       setLoading(false);
     }

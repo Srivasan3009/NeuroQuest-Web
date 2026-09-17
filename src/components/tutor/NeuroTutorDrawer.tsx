@@ -359,7 +359,7 @@ export const NeuroTutorDrawer: React.FC<NeuroTutorDrawerProps> = ({
                         <span>{msg.timestamp}</span>
                         {msg.source && (
                           <span className="opacity-75">
-                            • {msg.source === "gemini" ? "Gemini Flash" : "Pedagogy Engine"}
+                            • Pedagogy Engine
                           </span>
                         )}
                       </div>

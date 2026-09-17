@@ -254,16 +254,16 @@ export const LandingPage: React.FC<LandingPageProps> = ({
           <div className="bg-slate-900/60 border border-slate-800 rounded-2xl p-7 space-y-5 flex flex-col justify-between">
             <div className="space-y-3">
               <div className="w-10 h-10 rounded-xl bg-sky-500/15 border border-sky-500/30 text-sky-400 flex items-center justify-center">
-                <Terminal className="w-5 h-5" />
+                <Sliders className="w-5 h-5" />
               </div>
               <div className="text-xs font-mono text-sky-400 font-semibold uppercase">
-                Free-form Sandbox
+                Interactive Sandbox
               </div>
               <h3 className="text-xl font-bold text-slate-100 font-sans">
-                AI Playground: Prompt & Model Lab
+                Interactive Visual Sandbox
               </h3>
               <p className="text-xs text-slate-300 font-sans leading-relaxed">
-                Run side-by-side prompt tuning benchmarks. Calibrate temperature, nucleus top-P sampling, and inspect subword token counts in a dedicated developer-grade experimentation lab.
+                Interact with live 2D decision boundary hyperplanes and explore real-time subword tokenization and vector cosine similarity embedding spaces.
               </p>
             </div>
 
@@ -271,8 +271,8 @@ export const LandingPage: React.FC<LandingPageProps> = ({
               onClick={onExplorePlayground}
               className="px-5 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-750 border border-slate-700 text-slate-200 text-xs font-mono font-bold flex items-center justify-center gap-2 transition-colors"
             >
-              <Terminal className="w-4 h-4 text-cyan-400" />
-              <span>Launch Playground Bench</span>
+              <Sliders className="w-4 h-4 text-cyan-400" />
+              <span>Launch Sandbox Benches</span>
             </button>
           </div>
         </div>

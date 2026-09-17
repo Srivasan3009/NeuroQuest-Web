@@ -11,13 +11,15 @@ import {
   Zap,
   HelpCircle
 } from "lucide-react";
-import { Stage, Quest, UserProfile, AppTheme } from "../../types";
+import { Stage, Quest, UserProfile, AppTheme, Course } from "../../types";
 import { motion, AnimatePresence } from "motion/react";
 import { soundFx } from "../../utils/sound";
 import { DailyMissionsCard } from "./DailyMissionsCard";
 
 interface HomePathViewProps {
   stages: Stage[];
+  activeCourse?: Course;
+  onOpenCoursePicker?: () => void;
   user: UserProfile;
   onSelectQuest: (quest: Quest, stage: Stage) => void;
   onClaimChest: (chestId: string, sparks: number, xp: number) => void;
@@ -28,6 +30,8 @@ interface HomePathViewProps {
 
 export const HomePathView: React.FC<HomePathViewProps> = ({
   stages,
+  activeCourse,
+  onOpenCoursePicker,
   user,
   onSelectQuest,
   onClaimChest,
@@ -42,10 +46,15 @@ export const HomePathView: React.FC<HomePathViewProps> = ({
   const completedSet = new Set(user.completedQuestIds || []);
   const openedChests = new Set(user.openedChests || []);
 
-  // Collect all quests in order to form the linear path
+  // Filter stages for currently selected course if activeCourse is provided
+  const displayStages = activeCourse?.stageIds?.length
+    ? stages.filter((st) => activeCourse.stageIds.includes(st.id))
+    : stages;
+
+  // Collect all quests in order to form the linear path for this course
   const allQuestsWithStage: { quest: Quest; stage: Stage; globalIndex: number }[] = [];
   let gIdx = 1;
-  stages.forEach((st) => {
+  displayStages.forEach((st) => {
     st.quests.forEach((q) => {
       allQuestsWithStage.push({ quest: q, stage: st, globalIndex: gIdx });
       gIdx++;
@@ -182,113 +191,141 @@ export const HomePathView: React.FC<HomePathViewProps> = ({
     <div id="home-path-view" className="w-full max-w-6xl xl:max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-3 sm:pt-6 pb-32">
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
         {/* Left / Main Column: Path Progress & Winding Path */}
-        <div className="lg:col-span-7 xl:col-span-7 space-y-6">
-          {/* Mobile Mascot (shown on smaller screens < lg) */}
-          <div className="lg:hidden">
-            {renderMascotCard()}
-          </div>
-
-          {/* 2. Track Path Progress Card matching video */}
-          <div
-            className={`p-4 rounded-2xl space-y-3 transition-all ${
-              isNeumorphic
-                ? "neu-raised text-slate-800"
-                : isDark
-                ? "bg-[#27272A] border border-[#3F3F46] text-[#F4F4F5] shadow-lg"
-                : "bg-[#FFFDF9] border-2 border-[#1E1B18] text-[#1E1B18] shadow-[3px_3px_0px_#1E1B18]"
-            }`}
-          >
-            <div className="flex items-center justify-between text-xs font-mono">
-              <div>
-                <span className={`text-[10px] uppercase font-bold block ${isNeumorphic ? "text-slate-500" : isDark ? "text-zinc-400" : "text-zinc-500"}`}>
-                  CORE TRACK
-                </span>
-                <span className={`font-black ${isNeumorphic ? "text-slate-800" : isDark ? "text-zinc-100" : "text-[#1E1B18]"}`}>
-                  LESSON {activeIndex + 1} OF {totalLessons}
-                </span>
+        <div className="lg:col-span-7 xl:col-span-7">
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={activeCourse?.id || "default-course"}
+              initial={{ opacity: 0, y: 28, scale: 0.97 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: -28, scale: 0.97 }}
+              transition={{ type: "spring", stiffness: 350, damping: 27 }}
+              className="space-y-6"
+            >
+              {/* Mobile Mascot (shown on smaller screens < lg) */}
+              <div className="lg:hidden">
+                {renderMascotCard()}
               </div>
-              <span className={`font-black ${isNeumorphic ? "text-[#4F46E5]" : isDark ? "text-amber-400" : "text-[#4F46E5]"}`}>
-                {progressPercent}%
-              </span>
-            </div>
 
-            {/* Progress Bar */}
-            <div
-              className={`w-full h-3 rounded-full overflow-hidden ${
-                isNeumorphic
-                  ? "neu-inset p-0.5"
-                  : isDark
-                  ? "bg-[#18181B] border-2 border-[#3F3F46]"
-                  : "bg-zinc-100 border-2 border-[#1E1B18]"
-              }`}
-            >
+              {/* 2. Track Path Progress Card matching selected course */}
               <div
-                className={`h-full rounded-full transition-all duration-500 ${
+                className={`p-4 rounded-2xl space-y-3 transition-all ${
                   isNeumorphic
-                    ? "bg-gradient-to-r from-indigo-500 to-indigo-600 shadow-sm"
+                    ? "neu-raised text-slate-800"
                     : isDark
-                    ? "bg-amber-400"
-                    : "bg-[#4F46E5]"
+                    ? "bg-[#27272A] border border-[#3F3F46] text-[#F4F4F5] shadow-lg"
+                    : "bg-[#FFFDF9] border-2 border-[#1E1B18] text-[#1E1B18] shadow-[3px_3px_0px_#1E1B18]"
                 }`}
-                style={{ width: `${progressPercent}%` }}
-              />
-            </div>
+              >
+                <div className="flex items-center justify-between text-xs font-mono">
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <span className={`text-[10px] uppercase font-black block ${isNeumorphic ? "text-[#4F46E5]" : isDark ? "text-amber-400" : "text-[#4F46E5]"}`}>
+                        {activeCourse ? activeCourse.title : "CORE TRACK"}
+                      </span>
+                      {onOpenCoursePicker && (
+                        <button
+                          onClick={() => {
+                            soundFx.playTap();
+                            onOpenCoursePicker();
+                          }}
+                          className={`text-[9px] font-mono px-1.5 py-0.5 rounded border ${
+                            isNeumorphic
+                              ? "neu-btn text-slate-600 hover:text-indigo-600"
+                              : isDark
+                              ? "border-zinc-700 text-zinc-400 hover:text-amber-300"
+                              : "border-zinc-400 text-zinc-700 hover:text-indigo-600"
+                          }`}
+                        >
+                          Change
+                        </button>
+                      )}
+                    </div>
+                    <span className={`font-black ${isNeumorphic ? "text-slate-800" : isDark ? "text-zinc-100" : "text-[#1E1B18]"}`}>
+                      LESSON {activeIndex + 1} OF {totalLessons}
+                    </span>
+                  </div>
+                  <span className={`font-black ${isNeumorphic ? "text-[#4F46E5]" : isDark ? "text-amber-400" : "text-[#4F46E5]"}`}>
+                    {progressPercent}%
+                  </span>
+                </div>
 
-            {/* Start Today's Lesson Big Button */}
-            <button
-              id="btn-start-today-lesson"
-              onClick={handleStartTodayLesson}
-              className={`w-full py-3.5 px-4 rounded-xl font-black text-xs sm:text-sm uppercase tracking-wider flex items-center justify-center gap-2 transition-all active:translate-y-1 ${
-                isNeumorphic
-                  ? "neu-btn-primary shadow-lg active:scale-98"
-                  : isDark
-                  ? "bg-amber-400 text-zinc-950 hover:bg-amber-300 font-black shadow-md"
-                  : "bg-[#4F46E5] text-white hover:bg-[#4338CA] border-2 border-[#1E1B18] shadow-[3px_3px_0px_#1E1B18]"
-              }`}
-            >
-              <Play className="w-4 h-4 fill-current" />
-              <span>START TODAY'S LESSON</span>
-              <ChevronRight className="w-4 h-4 stroke-[3]" />
-            </button>
-          </div>
+                {/* Progress Bar */}
+                <div
+                  className={`w-full h-3 rounded-full overflow-hidden ${
+                    isNeumorphic
+                      ? "neu-inset p-0.5"
+                      : isDark
+                      ? "bg-[#18181B] border-2 border-[#3F3F46]"
+                      : "bg-zinc-100 border-2 border-[#1E1B18]"
+                  }`}
+                >
+                  <div
+                    className={`h-full rounded-full transition-all duration-500 ${
+                      isNeumorphic
+                        ? "bg-gradient-to-r from-indigo-500 to-indigo-600 shadow-sm"
+                        : isDark
+                        ? "bg-amber-400"
+                        : "bg-[#4F46E5]"
+                    }`}
+                    style={{ width: `${progressPercent}%` }}
+                  />
+                </div>
 
-          {/* Mobile Daily Missions (shown on smaller screens < lg) */}
-          <div className="lg:hidden">
-            {renderDailyMissions()}
-          </div>
+                {/* Start Today's Lesson Big Button */}
+                <button
+                  id="btn-start-today-lesson"
+                  onClick={handleStartTodayLesson}
+                  className={`w-full py-3.5 px-4 rounded-xl font-black text-xs sm:text-sm uppercase tracking-wider flex items-center justify-center gap-2 transition-all active:translate-y-1 ${
+                    isNeumorphic
+                      ? "neu-btn-primary shadow-lg active:scale-98"
+                      : isDark
+                      ? "bg-amber-400 text-zinc-950 hover:bg-amber-300 font-black shadow-md"
+                      : "bg-[#4F46E5] text-white hover:bg-[#4338CA] border-2 border-[#1E1B18] shadow-[3px_3px_0px_#1E1B18]"
+                  }`}
+                >
+                  <Play className="w-4 h-4 fill-current" />
+                  <span>START TODAY'S LESSON</span>
+                  <ChevronRight className="w-4 h-4 stroke-[3]" />
+                </button>
+              </div>
 
-          {/* 4. Winding Path Section matching video */}
-          <div className="relative pt-4 space-y-12 max-w-md sm:max-w-lg mx-auto">
-        {/* Stage 1 Header Card */}
-        <div
-          className={`text-center py-5 px-4 rounded-2xl mx-auto max-w-sm transition-all ${
-            isNeumorphic
-              ? "neu-raised text-slate-800"
-              : isDark
-              ? "bg-[#27272A] border border-[#3F3F46] text-[#F4F4F5] shadow-xl"
-              : "bg-[#FFFDF9] border-2 border-[#1E1B18] text-[#1E1B18] shadow-[4px_4px_0px_#1E1B18]"
-          }`}
-        >
-          <div
-            className={`text-[10px] font-mono tracking-widest uppercase font-bold ${
-              isNeumorphic ? "text-[#4F46E5]" : isDark ? "text-amber-400" : "text-[#4F46E5]"
-            }`}
-          >
-            CHAPTER 1
-          </div>
-          <h2
-            className={`text-2xl font-black tracking-tight uppercase mt-0.5 ${
-              isNeumorphic ? "text-slate-800" : isDark ? "text-[#F4F4F5]" : "text-[#1E1B18]"
-            }`}
-          >
-            WONDER
-          </h2>
-          <p className={`text-xs mt-1 font-medium ${isNeumorphic ? "text-slate-600" : isDark ? "text-zinc-400" : "text-zinc-600"}`}>
-            Start curious — explore fundamental paradigm shifts
-          </p>
-        </div>
+              {/* Mobile Daily Missions (shown on smaller screens < lg) */}
+              <div className="lg:hidden">
+                {renderDailyMissions()}
+              </div>
 
-        {/* Serpentine Node Path */}
+              {/* 4. Winding Path Section matching course */}
+              <div className="relative pt-4 space-y-12 max-w-md sm:max-w-lg mx-auto">
+                {/* Stage Header Card */}
+                <div
+                  className={`text-center py-5 px-4 rounded-2xl mx-auto max-w-sm transition-all ${
+                    isNeumorphic
+                      ? "neu-raised text-slate-800"
+                      : isDark
+                      ? "bg-[#27272A] border border-[#3F3F46] text-[#F4F4F5] shadow-xl"
+                      : "bg-[#FFFDF9] border-2 border-[#1E1B18] text-[#1E1B18] shadow-[4px_4px_0px_#1E1B18]"
+                  }`}
+                >
+                  <div
+                    className={`text-[10px] font-mono tracking-widest uppercase font-bold ${
+                      isNeumorphic ? "text-[#4F46E5]" : isDark ? "text-amber-400" : "text-[#4F46E5]"
+                    }`}
+                  >
+                    {activeCourse?.tag ? `COURSE • ${activeCourse.tag}` : "CHAPTER 1"}
+                  </div>
+                  <h2
+                    className={`text-xl sm:text-2xl font-black tracking-tight uppercase mt-0.5 ${
+                      isNeumorphic ? "text-slate-800" : isDark ? "text-[#F4F4F5]" : "text-[#1E1B18]"
+                    }`}
+                  >
+                    {displayStages[0]?.title || "AI Foundations"}
+                  </h2>
+                  <p className={`text-xs mt-1 font-medium ${isNeumorphic ? "text-slate-600" : isDark ? "text-zinc-400" : "text-zinc-600"}`}>
+                    {displayStages[0]?.subtitle || "Start curious — explore fundamental paradigm shifts"}
+                  </p>
+                </div>
+
+                {/* Serpentine Node Path */}
         <div className="relative py-4 min-h-[600px]">
           {/* Background SVG connecting curve line */}
           <svg
@@ -557,7 +594,9 @@ export const HomePathView: React.FC<HomePathViewProps> = ({
           </div>
         </div>
       </div>
-    </div>
+    </motion.div>
+  </AnimatePresence>
+</div>
 
     {/* Right Sticky Sidebar: Desktop & Widescreen */}
     <div className="hidden lg:block lg:col-span-5 xl:col-span-5 lg:sticky lg:top-20 space-y-6">

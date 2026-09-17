@@ -1,6 +1,7 @@
 import { Achievement, SkillMastery, UserProfile, AppTheme, MascotRole } from "../types";
 import { INITIAL_PROFILE, INITIAL_ACHIEVEMENTS, getLevelInfo } from "../data/gamification";
-import { saveUserProfileToFirestore } from "./firebase";
+import { leaderboardService } from "./leaderboard";
+import { socialService } from "./social";
 
 const STORAGE_KEY = "neuroquest_learner_profile_v1";
 
@@ -91,17 +92,9 @@ class StorageAdapter implements IDataStore {
     this.inMemoryProfile = profile;
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(profile));
+      leaderboardService.syncUserStats(profile).catch(() => {});
     } catch (e) {
       console.error("Failed to persist user profile to local storage", e);
-    }
-
-    // Persist to Firebase Firestore if profile has an ID
-    try {
-      if (profile.id) {
-        await saveUserProfileToFirestore(profile);
-      }
-    } catch (err) {
-      console.warn("Firestore background sync:", err);
     }
   }
 
@@ -168,6 +161,37 @@ class StorageAdapter implements IDataStore {
     };
 
     await this.saveUserProfile(updatedProfile);
+
+    // Broadcast real-time feed event for peers
+    if (!isAlreadyCompleted) {
+      socialService.postFeedItem({
+        userId: profile.id || "you",
+        userName: profile.fullName || "Cadet",
+        userLetter: (profile.fullName?.charAt(0) || "C").toUpperCase(),
+        type: "quest_complete",
+        title: `Conquered '${skillName}' Quest! 🎯`,
+        description: `Earned +${earnedXP} XP and advanced towards Neural Master.`,
+        timestamp: "Just now",
+        xpAwarded: earnedXP,
+        sharedPayload: {
+          stageName: skillName,
+        },
+      });
+
+      if (levelInfo.level > profile.level) {
+        socialService.postFeedItem({
+          userId: profile.id || "you",
+          userName: profile.fullName || "Cadet",
+          userLetter: (profile.fullName?.charAt(0) || "C").toUpperCase(),
+          type: "level_up",
+          title: `Ranked up to Level ${levelInfo.level}! 🚀`,
+          description: `Unlocked advanced neural architecture toolkits.`,
+          timestamp: "Just now",
+          xpAwarded: 250,
+        });
+      }
+    }
+
     return updatedProfile;
   }
 
